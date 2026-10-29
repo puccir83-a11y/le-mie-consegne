@@ -253,7 +253,9 @@ function prepareMessage(id,day){
  .replaceAll("{localita}",c.city||"la tua zona")
  .replaceAll("{giorno}",dayNames[deliveryDay]);
  if(confirm("Aprire WhatsApp per "+c.name+"?\nDovrai scegliere il gruppo corretto e confermare l'invio.")){
-  window.open("https://wa.me/?text="+encodeURIComponent(message),"_blank");
+  window.location.href =
+  "intent://send?text=" + encodeURIComponent(message) +
+  "#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end";
  }
 }
 
