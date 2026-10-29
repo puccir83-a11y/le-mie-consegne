@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le mie consegne</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f5f4;
+  color: #202938;
+  margin: 0;
+  padding: 16px;
+}
+header {
+  background: #176b55;
+  color: white;
+  padding: 20px;
+  border-radius: 14px;
+}
+h1 { margin-top: 0; font-size: 26px; }
+section {
+  background: white;
+  padding: 16px;
+  margin-top: 15px;
+  border-radius: 12px;
+}
+input, button {
+  font: inherit;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  margin: 5px 0;
+  border-radius: 8px;
+}
+input { border: 1px solid #ccd2da; }
+button {
+  background: #176b55;
+  color: white;
+  border: 0;
+  font-weight: bold;
+}
+.secondary { background: #e4eee9; color: #176b55; }
+.days { display: grid; grid-template-columns: 1fr 1fr; }
+.days label { padding: 5px 0; }
+.days input { width: auto; }
+.client { border-top: 1px solid #ddd; padding: 12px 0; }
+.small { font-size: 14px; color: #606977; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Le mie consegne</h1>
+  <div>Clienti e promemoria WhatsApp</div>
+</header>
+
+<section>
+  <h2>Promemoria di oggi</h2>
+  <p id="today"></p>
+  <div id="reminders"></div>
+</section>
+
+<section>
+  <h2 id="formTitle">Nuovo cliente</h2>
+  <form id="form">
+    <input id="name" placeholder="Nome o ragione sociale" required>
+    <input id="shop" placeholder="Nome insegna">
+    <input id="phone" placeholder="Telefono">
+    <input id="city" placeholder="Città, paese o frazione">
+    <input id="address" placeholder="Indirizzo e numero civico">
+    <input id="vat" placeholder="Partita IVA">
+    <input id="tax" placeholder="Codice fiscale">
+    <input id="group" placeholder="Nome o link del gruppo WhatsApp">
+
+    <p><b>Giorni di consegna</b></p>
+    <div class="days">
+      <label><input type="checkbox" name="day" value="1"> Lunedì</label>
+      <label><input type="checkbox" name="day" value="2"> Martedì</label>
+      <label><input type="checkbox" name="day" value="3"> Mercoledì</label>
+      <label><input type="checkbox" name="day" value="4"> Giovedì</label>
+      <label><input type="checkbox" name="day" value="5"> Venerdì</label>
+      <label><input type="checkbox" name="day" value="6"> Sabato</label>
+      <label><input type="checkbox" name="day" value="0"> Domenica</label>
+    </div>
+
+    <label>Cliente stagionale?</label>
+    <div class="days">
+      <label><input type="radio" name="season" value="no" checked> No</label>
+      <label><input type="radio" name="season" value="yes"> Sì</label>
+    </div>
+    <label>Data di riapertura</label>
+    <input type="date" id="reopen">
+
+    <button type="submit" id="saveButton">Salva cliente</button>
+    <button type="button" class="secondary" id="cancelEdit" hidden>Annulla modifica</button>
+  </form>
+</section>
+
+<section>
+  <h2>Tutti i clienti</h2>
+  <input id="search" placeholder="Cerca per nome o località">
+  <div id="clients"></div>
+</section>
+
+<script>
+const dayNames = [
+  "Domenica", "Lunedì", "Martedì", "Mercoledì",
+  "Giovedì", "Venerdì", "Sabato"
+];
+
+const $ = id => document.getElementById(id);
+let clients = [];
+let editingId = null;
+
+try {
+  clients = JSON.parse(localStorage.getItem("mieConsegne") || "[]");
+  if (!Array.isArray(clients)) clients = [];
+} catch (e) {
+  clients = [];
+}
+
+function escapeHTML(value) {
+  return String(value || "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+
+function saveData() {
+  try {
+    localStorage.setItem("mieConsegne", JSON.stringify(clients));
+    render();
+  } catch (e) {
+    alert("Non riesco a salvare i dati sul dispositivo.");
+  }
+}
+
+function render() {
+  const query = $("search").value.toLowerCase().trim();
+
+  $("clients").innerHTML = clients
+    .filter(c => `${c.name} ${c.city} ${c.shop}`.toLowerCase().includes(query))
+    .map(c => `
+      <div class="client">
+        <b>${escapeHTML(c.name)}</b>
+        <div>${escapeHTML(c.shop)}</div>
+        <div>${escapeHTML(c.city)} ${escapeHTML(c.address)}</div>
+        <p class="small">
+          Telefono: ${escapeHTML(c.phone)}<br>
+          Consegne: ${(c.days || []).map(d => dayNames[d]).join(", ")}<br>
+          Gruppo WhatsApp: ${escapeHTML(c.group || "Non indicato")}<br>
+          ${c.season === "yes" ? "Cliente stagionale" : ""}
+        </p>
+        <button class="secondary" onclick="editClient('${c.id}')">Modifica cliente</button>
+        <button onclick="prepareMessage('${c.id}')">Prepara messaggio WhatsApp</button>
+        <button class="secondary" onclick="deleteClient('${c.id}')">Elimina cliente</button>
+      </div>
+    `).join("") || "<p>Nessun cliente salvato.</p>";
+
+  const tomorrow = (new Date().getDay() + 1) % 7;
+  $("today").textContent =
+    "Promemoria per le consegne di domani (" + dayNames[tomorrow] + ").";
+
+  const due = clients.filter(c =>
+    c.days && c.days.includes(tomorrow) &&
+    !(c.season === "yes" && c.reopen &&
+      c.reopen > new Date().toISOString().slice(0, 10))
+  );
+
+  $("reminders").innerHTML = due.map(c =>
+    `<p>• ${escapeHTML(c.name)} — ${escapeHTML(c.city)}</p>`
+  ).join("") || "<p>Nessun promemoria per domani.</p>";
+}
+
+$("form").addEventListener("submit", event => {
+  event.preventDefault();
+
+  const days = [...document.querySelectorAll('input[name="day"]:checked')]
+    .map(input => Number(input.value));
+
+  if (!days.length) {
+    alert("Seleziona almeno un giorno di consegna.");
+    return;
+  }
+
+  const client = {
+    id: editingId || (Date.now().toString() + Math.random().toString(16).slice(2)),
+    name: $("name").value.trim(),
+    shop: $("shop").value.trim(),
+    phone: $("phone").value.trim(),
+    city: $("city").value.trim(),
+    address: $("address").value.trim(),
+    vat: $("vat").value.trim(),
+    tax: $("tax").value.trim(),
+    group: $("group").value.trim(),
+    days,
+    season: document.querySelector('input[name="season"]:checked').value,
+    reopen: $("reopen").value
+  };
+
+  if (editingId) {
+    clients = clients.map(c => c.id === editingId ? client : c);
+  } else {
+    clients.push(client);
+  }
+
+  saveData();
+  resetForm();
+  alert("Cliente salvato.");
+});
+
+function editClient(id) {
+  const c = clients.find(client => client.id === id);
+  if (!c) return;
+
+  editingId = id;
+  $("name").value = c.name || "";
+  $("shop").value = c.shop || "";
+  $("phone").value = c.phone || "";
+  $("city").value = c.city || "";
+  $("address").value = c.address || "";
+  $("vat").value = c.vat || "";
+  $("tax").value = c.tax || "";
+  $("group").value = c.group || "";
+  $("reopen").value = c.reopen || "";
+
+  document.querySelectorAll('input[name="day"]').forEach(input => {
+    input.checked = (c.days || []).includes(Number(input.value));
+  });
+  document.querySelector(`input[name="season"][value="${c.season || "no"}"]`).checked = true;
+
+  $("formTitle").textContent = "Modifica cliente";
+  $("saveButton").textContent = "Salva modifiche";
+  $("cancelEdit").hidden = false;
+  $("formTitle").scrollIntoView({ behavior: "smooth" });
+}
+
+function resetForm() {
+  editingId = null;
+  $("form").reset();
+  $("formTitle").textContent = "Nuovo cliente";
+  $("saveButton").textContent = "Salva cliente";
+  $("cancelEdit").hidden = true;
+}
+
+$("cancelEdit").addEventListener("click", resetForm);
+
+function deleteClient(id) {
+  if (confirm("Vuoi eliminare questo cliente?")) {
+    clients = clients.filter(c => c.id !== id);
+    saveData();
+    if (editingId === id) resetForm();
+  }
+}
+
+function prepareMessage(id) {
+  const c = clients.find(client => client.id === id);
+  if (!c) return;
+
+  const text = `Ciao! Domani passiamo per le consegne nella tua zona. Se hai bisogno di qualcosa, fammi sapere. Grazie!`;
+
+  if (confirm(
+    "Preparo il messaggio per " + c.name +
+    ". Dovrai scegliere il gruppo WhatsApp corretto e inviarlo manualmente."
+  )) {
+    window.location.href = "https://wa.me/?text=" + encodeURIComponent(text);
+  }
+}
+
+$("search").addEventListener("input", render);
+render();
+</script>
+</body>
+</html>
