@@ -269,7 +269,7 @@ groupLink:$("groupLink").value.trim(),
 function editClient(id){
  const c=clients.find(x=>x.id===id);if(!c)return;
  editingId=id;
- ["name","shop","phone","city","address","vat","tax","group","reopen","customMessage"].forEach(k=>$(k).value=c[k]||"");
+ ["name","shop","phone","city","address","vat","tax","group","groupLink","reopen","customMessage"].forEach(k=>$(k).value=c[k]||"");
  $("season").checked=c.season==="yes";
  document.querySelectorAll('input[name="day"]').forEach(x=>x.checked=(c.days||[]).includes(Number(x.value)));
  $("formTitle").textContent="Modifica cliente";
