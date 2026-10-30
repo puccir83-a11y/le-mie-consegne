@@ -294,21 +294,37 @@ function deleteClient(id){
  }
 }
 
+
 function prepareMessage(id,day){
- const c=clients.find(x=>x.id===id);if(!c)return;
- const deliveryDay=day===null?((new Date().getDay()+1)%7):day;
- const template=c.customMessage||
- "Ciao {nome}! Ti avviso che passiamo per le consegne {giorno} a {localita}. Hai bisogno di qualcosa? Grazie!";
- const message=template
- .replaceAll("{nome}",c.name||"")
- .replaceAll("{localita}",c.city||"la tua zona")
- .replaceAll("{giorno}",dayNames[deliveryDay]);
- if(confirm("Aprire WhatsApp per "+c.name+"?\nDovrai scegliere il gruppo corretto e confermare l'invio.")){
-  window.location.href =
-  "intent://send?text=" + encodeURIComponent(message) +
-  "#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end";
- }
+  const c=clients.find(x=>x.id===id);
+  if(!c)return;
+
+  const deliveryDay=day===null
+    ? ((new Date().getDay()+1)%7)
+    : day;
+
+  const template=c.customMessage ||
+    "Ciao {nome}! Ti avviso che passiamo per le consegne {giorno} a {localita}. Hai bisogno di qualcosa? Grazie!";
+
+  const message=template
+    .replaceAll("{nome}",c.name||"")
+    .replaceAll("{localita}",c.city||"la tua zona")
+    .replaceAll("{giorno}",dayNames[deliveryDay]);
+
+  if(c.groupLink){
+    if(confirm("Aprire il gruppo WhatsApp di "+c.name+"?")){
+      navigator.clipboard.writeText(message).then(()=>{
+        window.open(c.groupLink,"_blank");
+        alert("Messaggio copiato! Torna su WhatsApp Business e incollalo nel gruppo.");
+      }).catch(()=>{
+        alert("Non riesco a copiare il messaggio. Riprova.");
+      });
+    }
+  } else {
+    alert("Per questo cliente manca il link del gruppo WhatsApp. Inseriscilo nella sua scheda.");
+  }
 }
+
 
 $("search").addEventListener("input",render);
 $("dayFilter").addEventListener("change",render);
