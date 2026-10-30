@@ -188,13 +188,62 @@ function showReminders(){
  $("todayTitle").scrollIntoView({behavior:"smooth"});
 }
 
+
+let messageQueue = [];
+let messageIndex = 0;
+let queueDay = null;
+
 function startSelected(day){
- const chosen=clients.filter(c=>selectedToday.has(c.id)&&(c.days||[]).includes(day)&&active(c));
- if(!chosen.length){alert("Spunta almeno un cliente.");return;}
- $("todayList").innerHTML="<h3>Messaggi da preparare</h3>"+
- "<p>Apri un cliente alla volta, controlla il gruppo WhatsApp e premi Invia in WhatsApp.</p>"+
- chosen.map(c=>card(c,false,day)).join("");
+  messageQueue = clients.filter(c =>
+    selectedToday.has(c.id) &&
+    (c.days || []).includes(day) &&
+    active(c)
+  );
+
+  if(!messageQueue.length){
+    alert("Spunta almeno un cliente.");
+    return;
+  }
+
+  messageIndex = 0;
+  queueDay = day;
+  openNextMessage();
 }
+
+function openNextMessage(){
+  if(messageIndex >= messageQueue.length){
+    alert("Hai terminato tutti i messaggi selezionati!");
+    messageQueue = [];
+    selectedToday.clear();
+    showToday(false);
+    return;
+  }
+
+  const c = messageQueue[messageIndex];
+
+  $("todayList").innerHTML =
+    "<h3>Messaggio " + (messageIndex + 1) +
+    " di " + messageQueue.length + "</h3>" +
+    "<p>Cliente: <b>" + esc(c.name) + "</b></p>" +
+    "<p>Località: " + esc(c.city) + "</p>" +
+    "<button onclick=\"prepareMessage('" + c.id +
+    "'," + queueDay + ")\">Apri WhatsApp Business</button>" +
+    "<button class=\"secondary\" onclick=\"nextMessage()\">Passa al cliente successivo</button>" +
+    "<button class=\"secondary\" onclick=\"stopMessages()\">Interrompi</button>";
+}
+
+function nextMessage(){
+  messageIndex++;
+  openNextMessage();
+}
+
+function stopMessages(){
+  messageQueue = [];
+  messageIndex = 0;
+  alert("Preparazione dei messaggi interrotta.");
+  showToday(false);
+}
+
 
 $("form").addEventListener("submit",e=>{
  e.preventDefault();
