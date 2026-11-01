@@ -196,7 +196,8 @@ function showReminders(){
   html+=list.map(c=>card(c,false,dueDay)).join("")||"<p>Nessun cliente.</p>";
  }
  $("todayList").innerHTML=html;
- $("todayTitle").textContent="Promemoria del giorno precedente alla consegna. Orario previsto: 10:00.";
+ $
+("todayTitle").textContent="Promemoria del giorno precedente alla consegna. Ogni cliente ha il proprio orario preferito.";
  $("todayTitle").scrollIntoView({behavior:"smooth"});
 }
 
@@ -269,6 +270,7 @@ $("form").addEventListener("submit",e=>{
  address:$("address").value.trim(),vat:$("vat").value.trim(),
  tax:$("tax").value.trim(),group:$("group").value.trim(),
 groupLink:$("groupLink").value.trim(),
+sendTime:$("sendTime").value || "10:00",
  days,season:$("season").checked?"yes":"no",
  reopen:$("reopen").value,customMessage:$("customMessage").value.trim()
  };
@@ -280,7 +282,7 @@ groupLink:$("groupLink").value.trim(),
 function editClient(id){
  const c=clients.find(x=>x.id===id);if(!c)return;
  editingId=id;
- ["name","shop","phone","city","address","vat","tax","group","groupLink","reopen","customMessage"].forEach(k=>$(k).value=c[k]||"");
+ ["name","shop","phone","city","address","vat","tax","group","groupLink","reopen","customMessage","sendTime"].forEach(k=>$(k).value=c[k]||(k==="sendTime"?"10:00":""));
  $("season").checked=c.season==="yes";
  document.querySelectorAll('input[name="day"]').forEach(x=>x.checked=(c.days||[]).includes(Number(x.value)));
  $("formTitle").textContent="Modifica cliente";
