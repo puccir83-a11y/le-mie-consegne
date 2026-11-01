@@ -2,6 +2,8 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#1f2937">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Le mie consegne</title>
@@ -22,6 +24,13 @@ button{background:#176b55;color:white;border:0;font-weight:bold}
 .pill{display:inline-block;background:#e4eee9;color:#176b55;padding:5px 8px;border-radius:8px;margin:3px}
 </style>
 </head>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js");
+  });
+}
+</script>
 <body>
 <header>
 <h1>Le mie consegne</h1>
