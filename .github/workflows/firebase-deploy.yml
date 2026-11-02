@@ -1,0 +1,25 @@
+
+name: Firebase Functions
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Scarica il codice
+        uses: actions/checkout@v4
+
+      - name: Installa Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Controlla il codice Firebase
+        run: |
+          cd functions
+          npm install
+          node --check index.js
+          
