@@ -1,55 +1,68 @@
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#176b55">
 <link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#1f2937">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Le mie consegne</title>
 <style>
-body{font-family:Arial,sans-serif;background:#f2f5f4;color:#202938;margin:0;padding:14px}
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;margin:0;padding:14px;background:#f1f5f3;color:#233;max-width:920px;margin-inline:auto}
 header{background:#176b55;color:white;padding:20px;border-radius:14px}
-h1{margin:0 0 8px;font-size:26px}
-section{background:white;padding:15px;margin-top:14px;border-radius:12px}
-input,select,textarea,button{font:inherit;box-sizing:border-box;width:100%;padding:11px;margin:5px 0;border-radius:8px}
-input,select,textarea{border:1px solid #ccd2da}
-button{background:#176b55;color:white;border:0;font-weight:bold}
-.secondary{background:#e4eee9;color:#176b55}
-.days{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.days label,.checkline{display:flex;align-items:center;gap:8px;padding:5px 0}
-.days input,.checkline input{width:auto}
-.client{border-top:1px solid #ddd;padding:12px 0}
-.small{font-size:13px;color:#606977}
-.pill{display:inline-block;background:#e4eee9;color:#176b55;padding:5px 8px;border-radius:8px;margin:3px}
+h1{margin:0 0 5px}
+nav{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:12px 0}
+section{background:white;border-radius:12px;padding:15px;margin:12px 0}
+button,input,select,textarea{font:inherit;width:100%;padding:11px;border-radius:8px;margin:5px 0}
+button{border:0;background:#176b55;color:white;font-weight:bold;cursor:pointer}
+button.alt{background:#e5f0eb;color:#176b55}
+button.warn{background:#f7e6e6;color:#923}
+input,select,textarea{border:1px solid #cbd4d0}
+.hide{display:none}
+.days{display:grid;grid-template-columns:1fr 1fr}
+.days label,.line{display:flex;gap:8px;align-items:center}
+.days input,.line input{width:auto}
+.item{border-top:1px solid #ddd;padding:12px 0}
+.muted{color:#667;font-size:13px}
+.notice{background:#fff6dd;padding:10px;border-radius:8px}
+.pill{display:inline-block;padding:5px 9px;background:#e5f0eb;border-radius:9px;margin:4px}
+@media(min-width:600px){nav{grid-template-columns:repeat(6,1fr)}}
 </style>
 </head>
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js");
-  });
-}
-</script>
 <body>
+
 <header>
 <h1>Le mie consegne</h1>
-Gestione clienti, consegne e messaggi WhatsApp
+Clienti, promemoria e WhatsApp Business
 </header>
 
 <section>
-<h2>Consegne di oggi</h2>
-<p id="todayTitle"></p>
-<button onclick="showToday()">Apri clienti di oggi</button>
-<button class="secondary" onclick="showReminders()">Promemoria per tutti i giorni</button>
-<div id="todayList"></div>
+<div id="authStatus">Caricamento…</div>
+<button id="login">Accedi con Google</button>
+<button id="logout" class="alt hide">Esci</button>
 </section>
 
-<section>
-<h2>Ricerca clienti</h2>
-<input id="search" placeholder="Cerca nome, località o indirizzo">
+<nav id="menu" class="hide">
+<button data-page="home">Home</button>
+<button data-page="clients">Clienti</button>
+<button data-page="formPage">Nuovo cliente</button>
+<button data-page="places">Destinazioni</button>
+<button data-page="reminders">Promemoria</button>
+<button data-page="settings">Impostazioni</button>
+</nav>
+
+<section id="home" class="hide">
+<h2>Home</h2>
+<div id="summary"></div>
+<button data-page="reminders">Apri promemoria</button>
+</section>
+
+<section id="clients" class="hide">
+<h2>Clienti</h2>
+<input id="search" placeholder="Cerca cliente o località">
 <select id="dayFilter">
-<option value="">Tutti i giorni di consegna</option>
+<option value="">Tutti i giorni</option>
 <option value="1">Lunedì</option>
 <option value="2">Martedì</option>
 <option value="3">Mercoledì</option>
@@ -58,290 +71,355 @@ Gestione clienti, consegne e messaggi WhatsApp
 <option value="6">Sabato</option>
 <option value="0">Domenica</option>
 </select>
-<div id="clients"></div>
+<div id="clientList"></div>
 </section>
 
-<section>
+<section id="formPage" class="hide">
 <h2 id="formTitle">Nuovo cliente</h2>
-<form id="form">
+<form id="customerForm">
 <input id="name" placeholder="Nome o ragione sociale" required>
-<input id="shop" placeholder="Nome insegna">
+<input id="shop" placeholder="Insegna">
 <input id="phone" placeholder="Telefono">
-<input id="city" placeholder="Città, paese o frazione">
-<input id="address" placeholder="Via e numero civico">
+<input id="city" placeholder="Località">
+<input id="address" placeholder="Via e numero">
 <input id="vat" placeholder="Partita IVA">
 <input id="tax" placeholder="Codice fiscale">
-<input id="group" placeholder="Nome del gruppo WhatsApp">
-<input id="groupLink" placeholder="Link gruppo WhatsApp">
-<label>Orario preferito per il messaggio</label>
-<input type="time" id="sendTime" value="10:00">
+<input id="group" placeholder="Nome gruppo WhatsApp">
+<input id="groupLink" placeholder="Link gruppo WhatsApp" type="url">
+
+<label for="sendTime">Ora del promemoria (giorno prima della consegna)</label>
+<input type="time" id="sendTime" value="10:00" required>
 
 <p><b>Giorni di consegna</b></p>
 <div class="days">
-<label><input type="checkbox" name="day" value="1"> Lunedì</label>
-<label><input type="checkbox" name="day" value="2"> Martedì</label>
-<label><input type="checkbox" name="day" value="3"> Mercoledì</label>
-<label><input type="checkbox" name="day" value="4"> Giovedì</label>
-<label><input type="checkbox" name="day" value="5"> Venerdì</label>
-<label><input type="checkbox" name="day" value="6"> Sabato</label>
-<label><input type="checkbox" name="day" value="0"> Domenica</label>
+<label><input type="checkbox" name="day" value="1">Lunedì</label>
+<label><input type="checkbox" name="day" value="2">Martedì</label>
+<label><input type="checkbox" name="day" value="3">Mercoledì</label>
+<label><input type="checkbox" name="day" value="4">Giovedì</label>
+<label><input type="checkbox" name="day" value="5">Venerdì</label>
+<label><input type="checkbox" name="day" value="6">Sabato</label>
+<label><input type="checkbox" name="day" value="0">Domenica</label>
 </div>
 
-<label class="checkline">
-<input type="checkbox" id="season"> Cliente stagionale
-</label>
-<label>Data di riapertura</label>
-<input type="date" id="reopen">
+<label class="line"><input type="checkbox" id="season">Cliente stagionale</label>
+<label for="reopen">Data riapertura</label>
+<input id="reopen" type="date">
 
-<label>Messaggio personalizzato</label>
-<textarea id="customMessage" rows="4" placeholder="Ciao {nome}! Domani passiamo per le consegne a {localita}. Hai bisogno di qualcosa?"></textarea>
-<p class="small">Puoi usare {nome}, {localita} e {giorno} nel messaggio. Se lasci vuoto il campo, verrà usato un messaggio predefinito.</p>
+<label for="customMessage">Messaggio personalizzato</label>
+<textarea id="customMessage" rows="3" placeholder="Ciao {nome}! Domani passiamo a {localita}."></textarea>
+<p class="muted">Variabili: {nome}, {localita}, {giorno}.</p>
 
-<button type="submit" id="saveButton">Salva cliente</button>
-<button type="button" class="secondary" id="cancelEdit" hidden>Annulla modifica</button>
+<button type="submit">Salva cliente</button>
+<button type="button" class="alt" id="cancel">Annulla</button>
 </form>
 </section>
 
-<script>
-const dayNames=["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+<section id="places" class="hide">
+<h2>Destinazioni</h2>
+<div id="placeList"></div>
+</section>
+
+<section id="reminders" class="hide">
+<h2>Promemoria</h2>
+<p>Il messaggio WhatsApp viene preparato, ma lo invii tu.</p>
+<div id="reminderList"></div>
+</section>
+
+<section id="settings" class="hide">
+<h2>Impostazioni</h2>
+<button id="notifications">Attiva notifiche push su questo telefono</button>
+<p id="pushStatus" class="muted"></p>
+
+<button id="migrate" class="alt">Importa i clienti salvati su questo telefono</button>
+<p class="muted">Importa una sola volta. I dati locali originali non vengono cancellati. Dopo l'importazione, i clienti sono sincronizzati con Firebase e accessibili dall'account Google.</p>
+
+<button id="export" class="alt">Esporta copia di sicurezza JSON</button>
+
+<p class="notice">Le notifiche automatiche ad app chiusa richiedono anche la pubblicazione della funzione programmata Firebase (piano Blaze). Prima di quella pubblicazione non arriveranno notifiche automatiche.</p>
+</section>
+
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js';
+import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js';
+import {getFirestore,collection,doc,setDoc,deleteDoc,onSnapshot} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
+import {getMessaging,getToken,isSupported} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging.js';
+
+const firebaseConfig={
+apiKey:'AIzaSyD9i4wqwmmhGCto_RluvX1QVqs376Wg9zc',
+authDomain:'le-mie-consegne.firebaseapp.com',
+projectId:'le-mie-consegne',
+storageBucket:'le-mie-consegne.firebasestorage.app',
+messagingSenderId:'290180690792',
+appId:'1:290180690792:web:a192301b5a701155f4dcdd',
+measurementId:'G-LG245M1F41'
+};
+
+const vapidKey='BHARFLqVHYwJfp22fA2IM2PmiAVTVsLt9T7dXOT8vWQu_svE_3TluEsZC6UTp4faMl9cyom9XSaMkp8WOXy64NU';
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+const provider=new GoogleAuthProvider();
+
 const $=id=>document.getElementById(id);
-let clients=[];
-let editingId=null;
-let selectedToday=new Set();
-let currentView="today";
+const dayNames=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
 
-try {
-  clients=JSON.parse(localStorage.getItem("mieConsegne")||"[]");
-  if(!Array.isArray(clients)) clients=[];
-  clients=clients.map(c=>({...c,id:c.id||String(Date.now()+Math.random())}));
-} catch(e) { clients=[]; }
+let user=null,clients=[],editId=null,unsubscribe=null;
 
-function esc(s){
- return String(s||"").replace(/[&<>"']/g,c=>({
- "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
- })[c]);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({
+'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c]));
+
+const todayISO=()=>{
+let d=new Date();
+return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+
+const active=c=>!(c.season==='yes'&&c.reopen&&c.reopen>todayISO());
+const coll=()=>collection(db,'users',user.uid,'clients');
+
+function page(id){
+['home','clients','formPage','places','reminders','settings'].forEach(x=>$(x).classList.toggle('hide',x!==id));
+if(id==='clients')renderClients();
+if(id==='places')renderPlaces();
+if(id==='reminders')renderReminders();
 }
 
-function active(c){
- const today=new Date().toISOString().slice(0,10);
- return !(c.season==="yes" && c.reopen && c.reopen>today);
-}
-
-function saveData(){
- try{
-  localStorage.setItem("mieConsegne",JSON.stringify(clients));
-  render();
- }catch(e){alert("Impossibile salvare i dati sul dispositivo.");}
-}
-
-function getTomorrow(){
- return (new Date().getDay()+1)%7;
-}
-
-function card(c,showCheck=false,day=null){
- const check=showCheck
- ? `<label class="checkline"><input type="checkbox" ${selectedToday.has(c.id)?"checked":""} onchange="toggleSelected('${c.id}',this.checked)"> Includi nei messaggi da preparare</label>`
- : "";
- return `<div class="client">
- <b>${esc(c.name)}</b>
- <div>${esc(c.shop)}</div>
- <div>${esc(c.city)} ${esc(c.address)}</div>
- <p class="small">Telefono: ${esc(c.phone)}<br>
- Consegne: ${(c.days||[]).map(d=>dayNames[d]).join(", ")}<br>
- Gruppo: ${esc(c.group||"da scegliere in WhatsApp")}<br>
- ${c.season==="yes"?"Cliente stagionale":""}</p>
- ${check}
- <button onclick="prepareMessage('${c.id}',${day===null?"null":day})">Prepara messaggio WhatsApp</button>
- <button class="secondary" onclick="editClient('${c.id}')">Modifica cliente</button>
- <button class="secondary" onclick="deleteClient('${c.id}')">Elimina cliente</button>
- </div>`;
-}
-
-function render(){
- const q=$("search").value.toLowerCase().trim();
- const df=$("dayFilter").value;
- const found=clients.filter(c=>{
-  const text=[c.name,c.shop,c.city,c.address].join(" ").toLowerCase();
-  return text.includes(q) && (!df||(c.days||[]).includes(Number(df)));
- });
- $("clients").innerHTML=found.map(c=>card(c)).join("")||"<p>Nessun cliente trovato.</p>";
- const today=new Date().getDay();
- $("todayTitle").textContent="Oggi è "+dayNames[today]+".";
- if(currentView==="today") showToday(false);
-}
-
-function toggleSelected(id,checked){
- if(checked)selectedToday.add(id);else selectedToday.delete(id);
-}
-
-function showToday(scroll=true){
- currentView="today";
- const today=new Date().getDay();
- const due=clients.filter(c=>(c.days||[]).includes(today)&&active(c));
- due.forEach(c=>{if(!selectedToday.has(c.id)){}});
- $("todayList").innerHTML=
- `<p>Clienti con consegna oggi: ${due.length}. Spunta quelli per cui vuoi preparare un messaggio.</p>`+
- (due.map(c=>card(c,true,today)).join("")||"<p>Nessuna consegna prevista per oggi.</p>")+
- (due.length?`<button onclick="startSelected(${today})">Prepara messaggi selezionati (${due.filter(c=>selectedToday.has(c.id)).length})</button>`:"");
- if(scroll)$("todayTitle").scrollIntoView({behavior:"smooth"});
-}
-
-function showReminders(){
- currentView="reminders";
- let html="";
- for(let d=0;d<7;d++){
-  const dueDay=(d+1)%7;
-  const list=clients.filter(c=>(c.days||[]).includes(dueDay)&&active(c));
-  html+=`<h3>Messaggi da preparare il ${dayNames[d]} per le consegne di ${dayNames[dueDay]}</h3>`;
-  html+=list.map(c=>card(c,false,dueDay)).join("")||"<p>Nessun cliente.</p>";
- }
- $("todayList").innerHTML=html;
- $
-("todayTitle").textContent="Promemoria del giorno precedente alla consegna. Ogni cliente ha il proprio orario preferito.";
- $("todayTitle").scrollIntoView({behavior:"smooth"});
-}
-
-
-let messageQueue = [];
-let messageIndex = 0;
-let queueDay = null;
-
-function startSelected(day){
-  messageQueue = clients.filter(c =>
-    selectedToday.has(c.id) &&
-    (c.days || []).includes(day) &&
-    active(c)
-  );
-
-  if(!messageQueue.length){
-    alert("Spunta almeno un cliente.");
-    return;
-  }
-
-  messageIndex = 0;
-  queueDay = day;
-  openNextMessage();
-}
-
-function openNextMessage(){
-  if(messageIndex >= messageQueue.length){
-    alert("Hai terminato tutti i messaggi selezionati!");
-    messageQueue = [];
-    selectedToday.clear();
-    showToday(false);
-    return;
-  }
-
-  const c = messageQueue[messageIndex];
-
-  $("todayList").innerHTML =
-    "<h3>Messaggio " + (messageIndex + 1) +
-    " di " + messageQueue.length + "</h3>" +
-    "<p>Cliente: <b>" + esc(c.name) + "</b></p>" +
-    "<p>Località: " + esc(c.city) + "</p>" +
-    "<button onclick=\"prepareMessage('" + c.id +
-    "'," + queueDay + ")\">Apri WhatsApp Business</button>" +
-    "<button class=\"secondary\" onclick=\"nextMessage()\">Passa al cliente successivo</button>" +
-    "<button class=\"secondary\" onclick=\"stopMessages()\">Interrompi</button>";
-}
-
-function nextMessage(){
-  messageIndex++;
-  openNextMessage();
-}
-
-function stopMessages(){
-  messageQueue = [];
-  messageIndex = 0;
-  alert("Preparazione dei messaggi interrotta.");
-  showToday(false);
-}
-
-
-$("form").addEventListener("submit",e=>{
- e.preventDefault();
- const days=[...document.querySelectorAll('input[name="day"]:checked')].map(x=>Number(x.value));
- if(!days.length){alert("Seleziona almeno un giorno di consegna.");return;}
- const old=clients.find(c=>c.id===editingId);
- const c={
- id:editingId||String(Date.now()+Math.random()),
- name:$("name").value.trim(),shop:$("shop").value.trim(),
- phone:$("phone").value.trim(),city:$("city").value.trim(),
- address:$("address").value.trim(),vat:$("vat").value.trim(),
- tax:$("tax").value.trim(),group:$("group").value.trim(),
-groupLink:$("groupLink").value.trim(),
-sendTime:$("sendTime").value || "10:00",
- days,season:$("season").checked?"yes":"no",
- reopen:$("reopen").value,customMessage:$("customMessage").value.trim()
- };
- if(editingId)clients=clients.map(x=>x.id===editingId?c:x);
- else clients.push(c);
- saveData();resetForm();alert("Cliente salvato.");
+document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{
+if(b.dataset.page==='formPage')resetForm();
+page(b.dataset.page);
 });
 
-function editClient(id){
- const c=clients.find(x=>x.id===id);if(!c)return;
- editingId=id;
- ["name","shop","phone","city","address","vat","tax","group","groupLink","reopen","customMessage","sendTime"].forEach(k=>$(k).value=c[k]||(k==="sendTime"?"10:00":""));
- $("season").checked=c.season==="yes";
- document.querySelectorAll('input[name="day"]').forEach(x=>x.checked=(c.days||[]).includes(Number(x.value)));
- $("formTitle").textContent="Modifica cliente";
- $("saveButton").textContent="Salva modifiche";
- $("cancelEdit").hidden=false;
- $("formTitle").scrollIntoView({behavior:"smooth"});
+$('login').onclick=async()=>{
+try{
+await signInWithPopup(auth,provider);
+}catch(e){
+if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(e.code)){
+await signInWithRedirect(auth,provider);
+}else alert('Accesso non riuscito: '+e.message);
+}
+};
+
+$('logout').onclick=()=>signOut(auth);
+getRedirectResult(auth).catch(e=>console.warn('Redirect:',e.message));
+
+onAuthStateChanged(auth,u=>{
+if(unsubscribe){unsubscribe();unsubscribe=null;}
+user=u;
+$('login').classList.toggle('hide',!!u);
+$('logout').classList.toggle('hide',!u);
+$('menu').classList.toggle('hide',!u);
+$('authStatus').textContent=u?'Accesso: '+(u.email||'Google'):'Accedi con Google per usare i clienti sincronizzati.';
+
+if(u){
+setDoc(doc(db,'users',u.uid),{email:u.email||'',updatedAt:Date.now()},{merge:true}).catch(e=>console.warn('Profilo:',e.message));
+}
+
+if(!u){
+clients=[];
+['home','clients','formPage','places','reminders','settings'].forEach(id=>$(id).classList.add('hide'));
+return;
+}
+
+unsubscribe=onSnapshot(coll(),snap=>{
+clients=snap.docs.map(d=>({id:d.id,...d.data()}));
+render();
+},e=>alert('Errore lettura dati. Verifica le regole Firestore: '+e.message));
+
+page('home');
+});
+
+function render(){
+renderHome();
+renderClients();
+renderPlaces();
+renderReminders();
+}
+
+function renderHome(){
+let t=new Date().getDay(),tom=(t+1)%7;
+$('summary').innerHTML=`
+<span class="pill">${clients.length} clienti</span>
+<span class="pill">${clients.filter(c=>active(c)&&(c.days||[]).includes(t)).length} consegne oggi</span>
+<span class="pill">${clients.filter(c=>active(c)&&(c.days||[]).includes(tom)).length} promemoria oggi</span>`;
+}
+
+function card(c,deliveryDay){
+return `<div class="item">
+<b>${esc(c.name)}</b>
+<div>${esc(c.shop)} · ${esc(c.city)} ${esc(c.address)}</div>
+<p class="muted">Telefono: ${esc(c.phone)}<br>
+Giorni: ${(c.days||[]).map(d=>dayNames[d]).join(', ')}<br>
+Promemoria: ${esc(c.sendTime||'10:00')} il giorno precedente<br>
+Gruppo: ${esc(c.group)}</p>
+<button data-message="${esc(c.id)}" data-day="${deliveryDay??(c.days||[])[0]??0}">Prepara WhatsApp</button>
+<button class="alt" data-edit="${esc(c.id)}">Modifica</button>
+<button class="warn" data-delete="${esc(c.id)}">Elimina</button>
+</div>`;
+}
+
+function bindCards(el){
+el.querySelectorAll('[data-message]').forEach(b=>b.onclick=()=>prepare(b.dataset.message,+b.dataset.day));
+el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(b.dataset.edit));
+el.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>remove(b.dataset.delete));
+}
+
+function renderClients(){
+let q=$('search').value.toLowerCase().trim(),d=$('dayFilter').value;
+let a=clients.filter(c=>[c.name,c.shop,c.city,c.address].join(' ').toLowerCase().includes(q)&&(!d||(c.days||[]).includes(+d)));
+$('clientList').innerHTML=a.map(c=>card(c)).join('')||'<p>Nessun cliente.</p>';
+bindCards($('clientList'));
+}
+
+function renderPlaces(){
+let g={};
+clients.forEach(c=>(g[c.city||'Località non indicata']??=[]).push(c));
+$('placeList').innerHTML=Object.keys(g).sort((a,b)=>a.localeCompare(b,'it')).map(k=>`<h3>${esc(k)} (${g[k].length})</h3>${g[k].map(c=>`<div class="item">${esc(c.name)} — ${esc(c.address)}</div>`).join('')}`).join('')||'<p>Nessuna destinazione.</p>';
+}
+
+function renderReminders(){
+let html='';
+for(let d=0;d<7;d++){
+let delivery=(d+1)%7,a=clients.filter(c=>active(c)&&(c.days||[]).includes(delivery));
+html+=`<h3>${dayNames[d]} → consegne ${dayNames[delivery]}</h3>`+
+(a.map(c=>`<div class="item"><b>${esc(c.name)}</b> · ${esc(c.city)} · ore ${esc(c.sendTime||'10:00')}<button data-message="${esc(c.id)}" data-day="${delivery}">Prepara WhatsApp</button></div>`).join('')||'<p>Nessun cliente.</p>');
+}
+$('reminderList').innerHTML=html;
+bindCards($('reminderList'));
+}
+
+$('search').oninput=renderClients;
+$('dayFilter').onchange=renderClients;
+
+$('customerForm').onsubmit=async e=>{
+e.preventDefault();
+let ds=[...document.querySelectorAll('[name=day]:checked')].map(x=>+x.value);
+if(!ds.length)return alert('Seleziona un giorno di consegna.');
+
+let id=editId||crypto.randomUUID();
+let c={
+name:$('name').value.trim(),
+shop:$('shop').value.trim(),
+phone:$('phone').value.trim(),
+city:$('city').value.trim(),
+address:$('address').value.trim(),
+vat:$('vat').value.trim(),
+tax:$('tax').value.trim(),
+group:$('group').value.trim(),
+groupLink:$('groupLink').value.trim(),
+sendTime:$('sendTime').value||'10:00',
+days:ds,
+season:$('season').checked?'yes':'no',
+reopen:$('reopen').value,
+customMessage:$('customMessage').value.trim()
+};
+
+try{
+await setDoc(doc(coll(),id),c);
+resetForm();
+page('clients');
+alert('Cliente salvato.');
+}catch(e){alert('Salvataggio non riuscito: '+e.message);}
+};
+
+function edit(id){
+let c=clients.find(x=>x.id===id);
+if(!c)return;
+editId=id;
+['name','shop','phone','city','address','vat','tax','group','groupLink','sendTime','reopen','customMessage'].forEach(k=>$(k).value=c[k]||(k==='sendTime'?'10:00':''));
+$('season').checked=c.season==='yes';
+document.querySelectorAll('[name=day]').forEach(x=>x.checked=(c.days||[]).includes(+x.value));
+$('formTitle').textContent='Modifica cliente';
+page('formPage');
 }
 
 function resetForm(){
- editingId=null;$("form").reset();
- $("formTitle").textContent="Nuovo cliente";
- $("saveButton").textContent="Salva cliente";
- $("cancelEdit").hidden=true;
-}
-$("cancelEdit").addEventListener("click",resetForm);
-
-function deleteClient(id){
- if(confirm("Vuoi eliminare questo cliente?")){
-  clients=clients.filter(c=>c.id!==id);
-  selectedToday.delete(id);saveData();
-  if(editingId===id)resetForm();
- }
+editId=null;
+$('customerForm').reset();
+$('sendTime').value='10:00';
+$('formTitle').textContent='Nuovo cliente';
 }
 
+$('cancel').onclick=()=>{resetForm();page('clients');};
 
-function prepareMessage(id,day){
-  const c=clients.find(x=>x.id===id);
-  if(!c)return;
-
-  const deliveryDay=day===null
-    ? ((new Date().getDay()+1)%7)
-    : day;
-
-  const template=c.customMessage ||
-    "Ciao {nome}! Ti avviso che passiamo per le consegne {giorno} a {localita}. Hai bisogno di qualcosa? Grazie!";
-
-  const message=template
-    .replaceAll("{nome}",c.name||"")
-    .replaceAll("{localita}",c.city||"la tua zona")
-    .replaceAll("{giorno}",dayNames[deliveryDay]);
-
-  if(c.groupLink){
-    if(confirm("Aprire il gruppo WhatsApp di "+c.name+"?")){
-      navigator.clipboard.writeText(message).then(()=>{
-        window.open(c.groupLink,"_blank");
-        alert("Messaggio copiato! Torna su WhatsApp Business e incollalo nel gruppo.");
-      }).catch(()=>{
-        alert("Non riesco a copiare il messaggio. Riprova.");
-      });
-    }
-  } else {
-    alert("Per questo cliente manca il link del gruppo WhatsApp. Inseriscilo nella sua scheda.");
-  }
+async function remove(id){
+if(!confirm('Eliminare questo cliente?'))return;
+try{await deleteDoc(doc(coll(),id));}
+catch(e){alert(e.message);}
 }
 
+async function prepare(id,day){
+let c=clients.find(x=>x.id===id);
+if(!c)return;
+if(!c.groupLink)return alert('Manca il link del gruppo WhatsApp.');
 
-$("search").addEventListener("input",render);
-$("dayFilter").addEventListener("change",render);
-render();
+let msg=(c.customMessage||'Ciao {nome}! Domani passiamo per le consegne a {localita}, {giorno}. Hai bisogno di qualcosa?')
+.replaceAll('{nome}',c.name||'')
+.replaceAll('{localita}',c.city||'')
+.replaceAll('{giorno}',dayNames[day]);
+
+if(!confirm('Copiare il messaggio e aprire il gruppo di '+c.name+'?'))return;
+
+try{
+await navigator.clipboard.writeText(msg);
+window.open(c.groupLink,'_blank');
+alert('Messaggio copiato: incollalo e invialo su WhatsApp Business.');
+}catch(e){
+prompt('Copia questo messaggio e poi apri il gruppo:',msg);
+window.open(c.groupLink,'_blank');
+}
+}
+
+$('notifications').onclick=async()=>{
+try{
+if(!user)return alert('Accedi prima con Google.');
+if(!('Notification'in window)||!('serviceWorker'in navigator))return alert('Notifiche non supportate su questo browser.');
+
+let permission=await Notification.requestPermission();
+if(permission!=='granted')return alert('Permesso notifiche non concesso.');
+if(!await isSupported())return alert('Firebase Messaging non supportato su questo dispositivo/browser.');
+
+let reg=await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+let token=await getToken(getMessaging(app),{vapidKey,serviceWorkerRegistration:reg});
+if(!token)return alert('Token non disponibile.');
+
+await setDoc(doc(db,'users',user.uid,'devices','phone'),{token,updatedAt:Date.now()});
+$('pushStatus').textContent='Telefono registrato per le notifiche.';
+alert('Notifiche abilitate. Per gli avvisi automatici serve pubblicare anche la funzione Firebase.');
+}catch(e){alert('Errore notifiche: '+e.message);}
+};
+
+$('migrate').onclick=async()=>{
+if(!user)return;
+let local=[];
+try{local=JSON.parse(localStorage.getItem('mieConsegne')||'[]');}catch(e){}
+if(!Array.isArray(local)||!local.length)return alert('Nessun cliente locale trovato in questo browser.');
+if(!confirm('Importare '+local.length+' clienti? I dati locali resteranno salvati.'))return;
+
+let done=0;
+for(let c of local){
+try{
+let id=String(c.id||crypto.randomUUID()).replaceAll('/','_');
+let {id:unused,...fields}=c;
+await setDoc(doc(coll(),id),{...fields,sendTime:c.sendTime||'10:00'});
+done++;
+}catch(e){
+alert('Importazione interrotta: '+e.message);
+break;
+}
+}
+alert('Clienti importati: '+done);
+};
+
+$('export').onclick=()=>{
+let blob=new Blob([JSON.stringify(clients,null,2)],{type:'application/json'});
+let url=URL.createObjectURL(blob);
+let a=document.createElement('a');
+a.href=url;
+a.download='backup-clienti-consegne.json';
+a.click();
+setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
 </script>
 </body>
 </html>
