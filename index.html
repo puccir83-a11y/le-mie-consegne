@@ -34,7 +34,7 @@ input,select,textarea{border:1px solid #cbd4d0}
 
 <header>
 <h1>Le mie consegne</h1>
-Clienti, promemoria e WhatsApp Business
+Clienti, promemoria, WhatsApp e SMS
 </header>
 
 <section>
@@ -79,13 +79,24 @@ Clienti, promemoria e WhatsApp Business
 <form id="customerForm">
 <input id="name" placeholder="Nome o ragione sociale" required>
 <input id="shop" placeholder="Insegna">
-<input id="phone" placeholder="Telefono">
+<input id="phone" placeholder="Telefono (es. +393331234567)" type="tel">
 <input id="city" placeholder="Località">
 <input id="address" placeholder="Via e numero">
 <input id="vat" placeholder="Partita IVA">
 <input id="tax" placeholder="Codice fiscale">
+
+<label for="sendMethod"><b>Metodo di invio preferito</b></label>
+<select id="sendMethod">
+<option value="business">WhatsApp Business</option>
+<option value="whatsapp">WhatsApp normale</option>
+<option value="sms">SMS</option>
+</select>
+
+<p class="muted">Il metodo viene memorizzato per questo cliente. Per WhatsApp individuale il telefono deve avere il prefisso internazionale.</p>
+
 <input id="group" placeholder="Nome gruppo WhatsApp">
 <input id="groupLink" placeholder="Link gruppo WhatsApp" type="url">
+<p class="muted">Se inserisci un link di gruppo, verrà aperto quello. Altrimenti verrà preparato un messaggio individuale.</p>
 
 <label for="sendTime">Ora del promemoria (giorno prima della consegna)</label>
 <input type="time" id="sendTime" value="10:00" required>
@@ -121,7 +132,7 @@ Clienti, promemoria e WhatsApp Business
 
 <section id="reminders" class="hide">
 <h2>Promemoria</h2>
-<p>Il messaggio WhatsApp viene preparato, ma lo invii tu.</p>
+<p>Il messaggio viene preparato, ma l'invio resta manuale.</p>
 <div id="reminderList"></div>
 </section>
 
@@ -163,6 +174,11 @@ const provider=new GoogleAuthProvider();
 
 const $=id=>document.getElementById(id);
 const dayNames=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+const methodNames={
+business:'WhatsApp Business',
+whatsapp:'WhatsApp normale',
+sms:'SMS'
+};
 
 let user=null,clients=[],editId=null,unsubscribe=null;
 
@@ -177,6 +193,11 @@ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.
 
 const active=c=>!(c.season==='yes'&&c.reopen&&c.reopen>todayISO());
 const coll=()=>collection(db,'users',user.uid,'clients');
+
+function getMethod(c){
+return ['business','whatsapp','sms'].includes(c.sendMethod)
+?c.sendMethod:'business';
+}
 
 function page(id){
 ['home','clients','formPage','places','reminders','settings'].forEach(x=>$(x).classList.toggle('hide',x!==id));
@@ -245,14 +266,16 @@ $('summary').innerHTML=`
 }
 
 function card(c,deliveryDay){
+let method=getMethod(c);
 return `<div class="item">
 <b>${esc(c.name)}</b>
 <div>${esc(c.shop)} · ${esc(c.city)} ${esc(c.address)}</div>
 <p class="muted">Telefono: ${esc(c.phone)}<br>
 Giorni: ${(c.days||[]).map(d=>dayNames[d]).join(', ')}<br>
 Promemoria: ${esc(c.sendTime||'10:00')} il giorno precedente<br>
+Metodo: ${esc(methodNames[method])}<br>
 Gruppo: ${esc(c.group)}</p>
-<button data-message="${esc(c.id)}" data-day="${deliveryDay??(c.days||[])[0]??0}">Prepara WhatsApp</button>
+<button data-message="${esc(c.id)}" data-day="${deliveryDay??(c.days||[])[0]??0}">Prepara ${esc(methodNames[method])}</button>
 <button class="alt" data-edit="${esc(c.id)}">Modifica</button>
 <button class="warn" data-delete="${esc(c.id)}">Elimina</button>
 </div>`;
@@ -282,7 +305,7 @@ let html='';
 for(let d=0;d<7;d++){
 let delivery=(d+1)%7,a=clients.filter(c=>active(c)&&(c.days||[]).includes(delivery));
 html+=`<h3>${dayNames[d]} → consegne ${dayNames[delivery]}</h3>`+
-(a.map(c=>`<div class="item"><b>${esc(c.name)}</b> · ${esc(c.city)} · ore ${esc(c.sendTime||'10:00')}<button data-message="${esc(c.id)}" data-day="${delivery}">Prepara WhatsApp</button></div>`).join('')||'<p>Nessun cliente.</p>');
+(a.map(c=>`<div class="item"><b>${esc(c.name)}</b> · ${esc(c.city)} · ore ${esc(c.sendTime||'10:00')}<button data-message="${esc(c.id)}" data-day="${delivery}">Prepara ${esc(methodNames[getMethod(c)])}</button></div>`).join('')||'<p>Nessun cliente.</p>');
 }
 $('reminderList').innerHTML=html;
 bindCards($('reminderList'));
@@ -305,6 +328,7 @@ city:$('city').value.trim(),
 address:$('address').value.trim(),
 vat:$('vat').value.trim(),
 tax:$('tax').value.trim(),
+sendMethod:$('sendMethod').value,
 group:$('group').value.trim(),
 groupLink:$('groupLink').value.trim(),
 sendTime:$('sendTime').value||'10:00',
@@ -327,6 +351,7 @@ let c=clients.find(x=>x.id===id);
 if(!c)return;
 editId=id;
 ['name','shop','phone','city','address','vat','tax','group','groupLink','sendTime','reopen','customMessage'].forEach(k=>$(k).value=c[k]||(k==='sendTime'?'10:00':''));
+$('sendMethod').value=getMethod(c);
 $('season').checked=c.season==='yes';
 document.querySelectorAll('[name=day]').forEach(x=>x.checked=(c.days||[]).includes(+x.value));
 $('formTitle').textContent='Modifica cliente';
@@ -337,6 +362,7 @@ function resetForm(){
 editId=null;
 $('customerForm').reset();
 $('sendTime').value='10:00';
+$('sendMethod').value='business';
 $('formTitle').textContent='Nuovo cliente';
 }
 
@@ -348,25 +374,65 @@ try{await deleteDoc(doc(coll(),id));}
 catch(e){alert(e.message);}
 }
 
+function makeMessage(c,day){
+return (c.customMessage||
+'Ciao {nome}! Domani passiamo per le consegne a {localita}, {giorno}. Hai bisogno di qualcosa?')
+.replaceAll('{nome}',c.name||'')
+.replaceAll('{localita}',c.city||'')
+.replaceAll('{giorno}',dayNames[day]||'');
+}
+
+function normalizePhone(value){
+let digits=String(value||'').replace(/\D/g,'');
+if(!digits)return '';
+if(digits.startsWith('00'))digits=digits.slice(2);
+return digits;
+}
+
 async function prepare(id,day){
 let c=clients.find(x=>x.id===id);
 if(!c)return;
-if(!c.groupLink)return alert('Manca il link del gruppo WhatsApp.');
 
-let msg=(c.customMessage||'Ciao {nome}! Domani passiamo per le consegne a {localita}, {giorno}. Hai bisogno di qualcosa?')
-.replaceAll('{nome}',c.name||'')
-.replaceAll('{localita}',c.city||'')
-.replaceAll('{giorno}',dayNames[day]);
+let method=getMethod(c);
+let msg=makeMessage(c,day);
+let phone=normalizePhone(c.phone);
 
+if(method==='sms'){
+if(!phone)return alert('Manca il numero di telefono del cliente.');
+if(!confirm('Preparare un SMS per '+c.name+'?'))return;
+window.location.href='sms:+'+phone+'?body='+encodeURIComponent(msg);
+return;
+}
+
+if(c.groupLink){
+if(!/^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9_-]+\/?$/.test(c.groupLink)){
+return alert('Il link del gruppo WhatsApp non è valido.');
+}
 if(!confirm('Copiare il messaggio e aprire il gruppo di '+c.name+'?'))return;
 
 try{
 await navigator.clipboard.writeText(msg);
 window.open(c.groupLink,'_blank');
-alert('Messaggio copiato: incollalo e invialo su WhatsApp Business.');
+alert('Messaggio copiato. Incollalo nel gruppo e invialo.');
 }catch(e){
-prompt('Copia questo messaggio e poi apri il gruppo:',msg);
+prompt('Copia questo messaggio:',msg);
 window.open(c.groupLink,'_blank');
+}
+return;
+}
+
+if(!phone)return alert('Manca il numero di telefono del cliente.');
+if(phone.length<8||phone.length>15){
+return alert('Controlla il numero e inserisci il prefisso internazionale, ad esempio +39.');
+}
+
+if(!confirm('Preparare il messaggio WhatsApp per '+c.name+'?'))return;
+
+let url='https://wa.me/'+phone+'?text='+encodeURIComponent(msg);
+window.open(url,'_blank');
+
+if(method==='business'){
+alert('Se sul telefono sono presenti entrambe le app WhatsApp, scegli WhatsApp Business quando richiesto. La versione web non può garantirne l’apertura automatica.');
 }
 }
 
@@ -401,7 +467,11 @@ for(let c of local){
 try{
 let id=String(c.id||crypto.randomUUID()).replaceAll('/','_');
 let {id:unused,...fields}=c;
-await setDoc(doc(coll(),id),{...fields,sendTime:c.sendTime||'10:00'});
+await setDoc(doc(coll(),id),{
+...fields,
+sendTime:c.sendTime||'10:00',
+sendMethod:c.sendMethod||'business'
+});
 done++;
 }catch(e){
 alert('Importazione interrotta: '+e.message);
