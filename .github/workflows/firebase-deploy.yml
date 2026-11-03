@@ -1,25 +1,36 @@
 
-name: Firebase Functions
+name: Promemoria consegne
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
-  check:
+  notify:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Scarica il codice
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Installa Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '22'
 
-      - name: Controlla il codice Firebase
-        run: |
-          cd functions
-          npm install
-          node --check index.js
-          
+      - name: Autenticazione Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: github-firebase-deploy@le-mie-consegne.iam.gserviceaccount.com
+          token_format: access_token
+
+      - name: Installa dipendenze
+        run: npm install --no-save firebase-admin@13
+
+      - name: Invia promemoria
+        env:
+          GOOGLE_CLOUD_PROJECT: le-mie-consegne
+        run: node scripts/send-reminders.cjs
