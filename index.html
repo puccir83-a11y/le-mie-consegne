@@ -512,6 +512,11 @@ return alert('Seleziona almeno un giorno di consegna.');
 }
 
 const id=editId||crypto.randomUUID();
+const previous=editId
+?clients.find(x=>x.id===editId)
+:null;
+
+const callbackAt=$('callbackAt').value;
 
 const c={
 name:$('name').value.trim(),
@@ -529,14 +534,15 @@ days:ds,
 season:$('season').checked?'yes':'no',
 reopen:$('reopen').value,
 specialInfo:$('specialInfo').value.trim(),
-callbackAt:$('callbackAt').value,
+callbackAt,
 callbackReason:$('callbackReason').value.trim(),
-callbackDone:false,
+callbackDone:previous&&previous.callbackAt===callbackAt
+?!!previous.callbackDone:false,
 customMessage:$('customMessage').value.trim()
 };
 
 try{
-await setDoc(doc(coll(),id),c);
+await setDoc(doc(coll(),id),c,{merge:true});
 resetForm();
 page('clients');
 alert('Cliente salvato.');
@@ -678,12 +684,12 @@ const groupUrl=getGroupUrl(c.groupLink);
 
 if(!groupUrl){
 return alert(
-'Il collegamento non sembra un link di invito WhatsApp valido. Controlla il link salvato nella scheda cliente.'
+'Il collegamento del gruppo WhatsApp non è valido. Controlla il link salvato nella scheda cliente.'
 );
 }
 
 if(!confirm(
-'Preparare il messaggio e aprire il link del gruppo di '+c.name+'?'
+'Preparare il messaggio e aprire il gruppo di '+c.name+'?'
 ))return;
 
 copyMessage(message).then(copied=>{
@@ -692,25 +698,23 @@ prompt('Copia il messaggio da incollare nel gruppo:',message);
 }
 }).catch(()=>{});
 
-
 if(method==='business'){
-  const url=new URL(groupUrl);
-  const intentUrl=
-    'intent://'+url.host+url.pathname+
-    '#Intent;scheme=https;package=com.whatsapp.w4b;'+
-    'S.browser_fallback_url='+
-    encodeURIComponent(groupUrl)+';end';
+const url=new URL(groupUrl);
+const intentUrl=
+'intent://'+url.host+url.pathname+
+'#Intent;scheme=https;package=com.whatsapp.w4b;'+
+'S.browser_fallback_url='+
+encodeURIComponent(groupUrl)+';end';
 
-  window.location.href=intentUrl;
+window.location.href=intentUrl;
 }else{
-  window.location.href=groupUrl;
-
+window.location.href=groupUrl;
 }
+
 return;
 }
 
 if(!phone){
-
 return alert('Manca il numero di telefono del cliente.');
 }
 
@@ -783,7 +787,7 @@ $('pushStatus').textContent=
 'Telefono registrato per le notifiche.';
 
 alert(
-'Notifiche abilitate sul dispositivo. Per ricevere avvisi automatici serve configurare e pubblicare la funzione programmata Firebase.'
+'Notifiche abilitate sul dispositivo. Gli avvisi automatici richiedono anche la funzione programmata sul server.'
 );
 
 }catch(e){
