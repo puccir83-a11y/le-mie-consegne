@@ -368,75 +368,109 @@ $('formTitle').textContent='Nuovo cliente';
 
 $('cancel').onclick=()=>{resetForm();page('clients');};
 
-async function remove(id){
-if(!confirm('Eliminare questo cliente?'))return;
-try{await deleteDoc(doc(coll(),id));}
-catch(e){alert(e.message);}
+
+function getGroupUrl(value){
+  const raw=String(value||'').trim();
+  try {
+    const url=new URL(raw);
+    const host=url.hostname.toLowerCase();
+
+    if(
+      url.protocol!=='https:' ||
+      !['chat.whatsapp.com','www.chat.whatsapp.com'].includes(host)
+    ) return null;
+
+    if(!/^\/[A-Za-z0-9_-]+\/?$/.test(url.pathname)){
+      return null;
+    }
+
+    return url.href;
+  }catch(e){
+    return null;
+  }
 }
 
-function makeMessage(c,day){
-return (c.customMessage||
-'Ciao {nome}! Domani passiamo per le consegne a {localita}, {giorno}. Hai bisogno di qualcosa?')
-.replaceAll('{nome}',c.name||'')
-.replaceAll('{localita}',c.city||'')
-.replaceAll('{giorno}',dayNames[day]||'');
+function copyGroupMessage(message){
+  const box=document.createElement('textarea');
+  box.value=message;
+  box.setAttribute('readonly','');
+  box.style.position='fixed';
+  box.style.opacity='0';
+  document.body.appendChild(box);
+  box.select();
+
+  let copied=false;
+  try{
+    copied=document.execCommand('copy');
+  }catch(e){}
+
+  box.remove();
+  return copied;
 }
 
-function normalizePhone(value){
-let digits=String(value||'').replace(/\D/g,'');
-if(!digits)return '';
-if(digits.startsWith('00'))digits=digits.slice(2);
-return digits;
+function prepare(id,day){
+  const c=clients.find(x=>x.id===id);
+  if(!c)return;
+
+  const method=getMethod(c);
+  const msg=makeMessage(c,day);
+  const phone=normalizePhone(c.phone);
+
+  if(method==='sms'){
+    if(!phone){
+      return alert('Manca il numero di telefono del cliente.');
+    }
+
+    if(!confirm('Preparare un SMS per '+c.name+'?'))return;
+
+    window.location.href=
+      'sms:+'+phone+'?body='+encodeURIComponent(msg);
+    return;
+  }
+
+  if(c.groupLink && c.groupLink.trim()){
+    const groupUrl=getGroupUrl(c.groupLink);
+
+    if(!groupUrl){
+      return alert(
+        'Il link non sembra un invito WhatsApp valido. '+
+        'Controlla che inizi con https://chat.whatsapp.com/'
+      );
+    }
+
+    if(!confirm(
+      'Aprire il link del gruppo di '+c.name+
+      '? Il messaggio andrà incollato e inviato manualmente.'
+    ))return;
+
+    const copied=copyGroupMessage(msg);
+
+    if(!copied){
+      prompt('Copia il messaggio prima di continuare:',msg);
+    }
+
+    window.location.href=groupUrl;
+    return;
+  }
+
+  if(!phone){
+    return alert('Manca il numero di telefono del cliente.');
+  }
+
+  if(phone.length<8||phone.length>15){
+    return alert(
+      'Controlla il numero e inserisci il prefisso internazionale.'
+    );
+  }
+
+  if(!confirm(
+    'Preparare il messaggio WhatsApp per '+c.name+'?'
+  ))return;
+
+  window.location.href=
+    'https://wa.me/'+phone+'?text='+encodeURIComponent(msg);
 }
 
-async function prepare(id,day){
-let c=clients.find(x=>x.id===id);
-if(!c)return;
-
-let method=getMethod(c);
-let msg=makeMessage(c,day);
-let phone=normalizePhone(c.phone);
-
-if(method==='sms'){
-if(!phone)return alert('Manca il numero di telefono del cliente.');
-if(!confirm('Preparare un SMS per '+c.name+'?'))return;
-window.location.href='sms:+'+phone+'?body='+encodeURIComponent(msg);
-return;
-}
-
-if(c.groupLink){
-if(!/^https:\/\/(?:www\.)?chat\.whatsapp\.com\/[A-Za-z0-9_-]+\/?(?:[?#].*)?$/i.test(c.groupLink.trim())){
-return alert('Il link del gruppo WhatsApp non è valido.');
-}
-if(!confirm('Copiare il messaggio e aprire il gruppo di '+c.name+'?'))return;
-
-try{
-await navigator.clipboard.writeText(msg);
-window.open(c.groupLink,'_blank');
-alert('Messaggio copiato. Incollalo nel gruppo e invialo.');
-}catch(e){
-prompt('Copia questo messaggio:',msg);
-window.open(c.groupLink,'_blank');
-}
-return;
-}
-
-if(!phone)return alert('Manca il numero di telefono del cliente.');
-if(phone.length<8||phone.length>15){
-return alert('Controlla il numero e inserisci il prefisso internazionale, ad esempio +39.');
-}
-
-if(!confirm('Preparare il messaggio WhatsApp per '+c.name+'?'))return;
-
-let url='https://wa.me/'+phone+'?text='+encodeURIComponent(msg);
-window.open(url,'_blank');
-
-if(method==='business'){
-alert('Se sul telefono sono presenti entrambe le app WhatsApp, scegli WhatsApp Business quando richiesto. La versione web non può garantirne l’apertura automatica.');
-}
-}
-
-$('notifications').onclick=async()=>{
 try{
 if(!user)return alert('Accedi prima con Google.');
 if(!('Notification'in window)||!('serviceWorker'in navigator))return alert('Notifiche non supportate su questo browser.');
