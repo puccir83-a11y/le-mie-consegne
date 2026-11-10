@@ -405,7 +405,7 @@ return;
 }
 
 if(c.groupLink){
-if(!/^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9_-]+\/?$/.test(c.groupLink)){
+if(!/^https:\/\/(?:www\.)?chat\.whatsapp\.com\/[A-Za-z0-9_-]+\/?(?:[?#].*)?$/i.test(c.groupLink.trim())){
 return alert('Il link del gruppo WhatsApp non è valido.');
 }
 if(!confirm('Copiare il messaggio e aprire il gruppo di '+c.name+'?'))return;
