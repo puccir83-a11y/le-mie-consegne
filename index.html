@@ -692,9 +692,21 @@ prompt('Copia il messaggio da incollare nel gruppo:',message);
 }
 }).catch(()=>{});
 
-window.location.href=groupUrl;
-return;
+
+if(method==='business'){
+  const url=new URL(groupUrl);
+  const intentUrl=
+    'intent://'+url.host+url.pathname+
+    '#Intent;scheme=https;package=com.whatsapp.w4b;'+
+    'S.browser_fallback_url='+
+    encodeURIComponent(groupUrl)+';end';
+
+  window.location.href=intentUrl;
+}else{
+  window.location.href=groupUrl;
 }
+return;
+
 
 if(!phone){
 return alert('Manca il numero di telefono del cliente.');
