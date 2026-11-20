@@ -324,12 +324,20 @@ getRedirectResult(auth).catch(e=>{
 console.warn('Redirect:',e.message);
 });
 
-onAuthStateChanged(auth,u=>{
+
+onAuthStateChanged(auth,async u=>{
+  
 if(unsubscribe){
 unsubscribe();
 unsubscribe=null;
 }
 
+if (u && u.providerData.some(p => p.providerId === 'password') && !u.emailVerified) {
+  alert('Devi verificare la tua email prima di accedere. Controlla la posta.');
+  await signOut(auth);
+  return;
+  }
+  
 user=u;
 
 $('login').classList.toggle('hide',!!u);
