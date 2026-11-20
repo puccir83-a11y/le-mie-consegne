@@ -40,6 +40,14 @@ Clienti, promemoria, WhatsApp e SMS
 <section>
 <div id="authStatus">Caricamento…</div>
 <button id="login">Accedi con Google</button>
+  
+<button id="loginFacebook" type="button">Accedi con Facebook</button>
+ 
+<input id="emailLogin" type="email" placeholder="Indirizzo email">
+<input id="passwordLogin" type="password" placeholder="Password">
+<button id="loginEmail" type="button">Accedi con email</button>
+<button id="registerEmail" type="button">Registrati</button>
+  
 <button id="logout" class="alt hide">Esci</button>
 </section>
 
@@ -169,7 +177,9 @@ Clienti, promemoria, WhatsApp e SMS
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js';
 
-import {getAuth,GoogleAuthProvider,FacebookAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js';
+import {getAuth,GoogleAuthProvider,FacebookAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,createUserWithEmailAndPassword,signInWithEmailAndPassword
+,sendEmailVerification
+       } from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js';
 
 import {getFirestore,collection,doc,setDoc,deleteDoc,onSnapshot} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
 import {getMessaging,getToken,isSupported} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging.js';
@@ -271,6 +281,43 @@ alert('Accesso non riuscito: '+e.message);
 }
 };
 
+$('loginFacebook').onclick=async()=>{
+  const facebookProvider=new FacebookAuthProvider();
+  try{
+    await signInWithPopup(auth,facebookProvider);
+  }catch(e){
+    if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(e.code)){
+      await signInWithRedirect(auth,facebookProvider);
+    }else{
+      alert('Accesso Facebook non riuscito: '+e.message);
+    }
+  }
+};
+  
+$('loginEmail').onclick=async()=>{
+  const email=$('emailLogin').value.trim();
+  const password=$('passwordLogin').value;
+  try{
+    await signInWithEmailAndPassword(auth,email,password);
+  }catch(e){
+    alert('Accesso non riuscito: '+e.message);
+  }
+};
+
+$('registerEmail').onclick=async()=>{
+  const email=$('emailLogin').value.trim();
+  const password=$('passwordLogin').value;
+  try{
+    await createUserWithEmailAndPassword(auth,email,password);
+    
+await sendEmailVerification(auth.currentUser);
+    
+    alert('Registrazione riuscita!');
+  }catch(e){
+    alert('Registrazione non riuscita: '+e.message);
+  }
+};
+  
 $('logout').onclick=()=>signOut(auth);
 
 getRedirectResult(auth).catch(e=>{
