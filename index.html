@@ -47,7 +47,7 @@ Clienti, promemoria, WhatsApp e SMS
 <input id="passwordLogin" type="password" placeholder="Password">
 <button id="loginEmail" type="button">Accedi con email</button>
 <button id="registerEmail" type="button">Registrati</button>
-  
+  <button id="resendVerification" type="button" class="alt">Reinvia email di verifica</button>
 <button id="logout" class="alt hide">Esci</button>
 </section>
 
@@ -227,7 +227,7 @@ let user=null;
 let clients=[];
 let editId=null;
 let unsubscribe=null;
-
+let reinvioInCorso=false;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({
 '&':'&amp;',
 '<':'&lt;',
@@ -331,6 +331,34 @@ await sendEmailVerification(auth.currentUser);
   }
 };
   
+$('resendVerification').onclick=async()=>{
+  reinvioInCorso=true;
+  const email=$('emailLogin').value.trim();
+  const password=$('passwordLogin').value;
+
+  if(!email||!password){
+    alert('Inserisci email e password del tuo account.');
+    return;
+  }
+
+  try{
+    const result=await signInWithEmailAndPassword(auth,email,password);
+
+    if(result.user.emailVerified){
+      alert('La tua email è già verificata.');
+    }else{
+      await sendEmailVerification(result.user);
+      alert('Email di verifica inviata. Controlla anche la posta indesiderata.');
+    }
+
+    await signOut(auth);
+  }catch(e){
+    alert('Impossibile reinviare la verifica: '+e.message);
+}finally{
+  reinvioInCorso=false;
+  }
+};
+  
 $('logout').onclick=()=>signOut(auth);
 
 getRedirectResult(auth).catch(e=>{
@@ -345,7 +373,7 @@ unsubscribe();
 unsubscribe=null;
 }
 
-if (u && u.providerData.some(p => p.providerId === 'password') && !u.emailVerified) {
+if (u && !reinvioInCorso && u.providerData.some(p => p.providerId === 'password') && !u.emailVerified) {
   alert('Devi verificare la tua email prima di accedere. Controlla la posta.');
   await signOut(auth);
   return;
