@@ -37,7 +37,7 @@ input,select,textarea{border:1px solid #cbd4d0}
 Clienti, promemoria, WhatsApp e SMS
 </header>
 
-<section>
+<section id="authBox">
 <div id="authStatus">Caricamento…</div>
 <button id="login">Accedi con Google</button>
   
@@ -48,8 +48,8 @@ Clienti, promemoria, WhatsApp e SMS
 <button id="loginEmail" type="button">Accedi con email</button>
 <button id="registerEmail" type="button">Registrati</button>
   <button id="resendVerification" type="button" class="alt">Reinvia email di verifica</button>
-<button id="logout" class="alt hide">Esci</button>
 </section>
+<button id="logout" class="alt hide">Esci</button>
 
 <nav id="menu" class="hide">
 <button data-page="home">Home</button>
@@ -380,7 +380,7 @@ if (u && u.providerData.some(p => p.providerId === 'password') && !u.emailVerifi
   }
   
 user=u;
-
+$('authBox').classList.toggle('hide',!!u);
 $('login').classList.toggle('hide',!!u);
 $('logout').classList.toggle('hide',!u);
 $('menu').classList.toggle('hide',!u);
