@@ -373,7 +373,7 @@ unsubscribe();
 unsubscribe=null;
 }
 
-if (u && !reinvioInCorso && u.providerData.some(p => p.providerId === 'password') && !u.emailVerified) {
+if (u && u.providerData.some(p => p.providerId === 'password') && !u.emailVerified) {
   alert('Devi verificare la tua email prima di accedere. Controlla la posta.');
   await signOut(auth);
   return;
