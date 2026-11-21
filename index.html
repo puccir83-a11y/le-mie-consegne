@@ -45,6 +45,10 @@ Clienti, promemoria, WhatsApp e SMS
  
 <input id="emailLogin" type="email" placeholder="Indirizzo email">
 <input id="passwordLogin" type="password" placeholder="Password">
+<label class="line">
+  <input type="checkbox" id="showPassword">
+  Mostra password
+</label>
 <button id="loginEmail" type="button">Accedi con email</button>
 <button id="registerEmail" type="button">Registrati</button>
   <button id="resendVerification" type="button" class="alt">Reinvia email di verifica</button>
@@ -360,7 +364,10 @@ $('resendVerification').onclick=async()=>{
 };
   
 $('logout').onclick=()=>signOut(auth);
-
+$('showPassword').onchange=()=>{
+  $('passwordLogin').type=
+    $('showPassword').checked ? 'text' : 'password';
+};
 getRedirectResult(auth).catch(e=>{
 console.warn('Redirect:',e.message);
 });
