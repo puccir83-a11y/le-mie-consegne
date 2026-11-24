@@ -1032,7 +1032,12 @@ input.onchange=async()=>{
 
   let imported=0;
   try{
-    for(const cliente of backup){
+for(const cliente of backup){
+  const giaPresente=clients.some(c=>
+    (cliente.id && c.id===cliente.id) ||
+    (cliente.name && c.name?.trim().toLowerCase()===cliente.name.trim().toLowerCase())
+  );
+  if(giaPresente)continue;
       const {id,...data}=cliente;
       const newId=crypto.randomUUID();
       await setDoc(doc(coll(),newId),data);
