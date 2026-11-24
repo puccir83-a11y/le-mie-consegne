@@ -631,7 +631,11 @@ const ds=[...document.querySelectorAll('[name=day]:checked')]
 if(!ds.length){
 return alert('Seleziona almeno un giorno di consegna.');
 }
-
+// LIMITE PIANO GRATUITO
+if(!editId && clients.length>=20){
+  alert('Hai raggiunto il limite di 20 clienti gratuiti. Per aggiungerne altri sarà necessario il piano Premium.');
+  return;
+  }
 const id=editId||crypto.randomUUID();
 const previous=editId
 ?clients.find(x=>x.id===editId)
@@ -943,6 +947,10 @@ if(!confirm(
 let done=0;
 
 for(const c of local){
+  if(clients.length+done>=20){
+  alert('Limite di 20 clienti gratuiti raggiunto.');
+  break;
+  }
 try{
 const id=String(
 c.id||crypto.randomUUID()
@@ -1038,6 +1046,10 @@ for(const cliente of backup){
     (cliente.name && c.name?.trim().toLowerCase()===cliente.name.trim().toLowerCase())
   );
   if(giaPresente)continue;
+  if(clients.length+imported>=20){
+  alert('Limite di 20 clienti gratuiti raggiunto. Importazione interrotta.');
+  break;
+  }
       const {id,...data}=cliente;
       const newId=crypto.randomUUID();
       await setDoc(doc(coll(),newId),data);
