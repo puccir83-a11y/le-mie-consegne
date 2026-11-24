@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="it">
 <head>
@@ -40,9 +39,9 @@ Clienti, promemoria, WhatsApp e SMS
 <section id="authBox">
 <div id="authStatus">Caricamento…</div>
 <button id="login">Accedi con Google</button>
-  
+
 <button id="loginFacebook" type="button">Accedi con Facebook</button>
- 
+
 <input id="emailLogin" type="email" placeholder="Indirizzo email">
 <input id="passwordLogin" type="password" placeholder="Password">
 <label class="line">
@@ -51,7 +50,7 @@ Clienti, promemoria, WhatsApp e SMS
 </label>
 <button id="loginEmail" type="button">Accedi con email</button>
 <button id="registerEmail" type="button">Registrati</button>
-  <button id="resendVerification" type="button" class="alt">Reinvia email di verifica</button>
+<button id="resendVerification" type="button" class="alt">Reinvia email di verifica</button>
 </section>
 <button id="logout" class="alt hide">Esci</button>
 
@@ -175,12 +174,12 @@ Clienti, promemoria, WhatsApp e SMS
 <button id="migrate" class="alt">Importa i clienti salvati su questo telefono</button>
 <p class="muted">Importa una sola volta. I dati locali originali non vengono cancellati.</p>
 <button id="export" class="alt">Esporta copia di sicurezza JSON</button>
+<button id="deleteAccount" class="warn" type="button">Elimina account e dati</button>
 <p class="notice">Le notifiche automatiche ad app chiusa richiedono anche la funzione programmata Firebase. Il solo pulsante non le programma.</p>
 </section>
 
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js';
-
 
 import {
   getAuth,
@@ -194,12 +193,28 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendEmailVerification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  deleteUser,
+  reauthenticateWithPopup,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js';
-  
 
-import {getFirestore,collection,doc,setDoc,deleteDoc,onSnapshot} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
-import {getMessaging,getToken,isSupported} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging.js';
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  getDocs
+} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
+
+import {
+  getMessaging,
+  getToken,
+  isSupported
+} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging.js';
 
 const firebaseConfig={
 apiKey:'AIzaSyD9i4wqwmmhGCto_RluvX1QVqs376Wg9zc',
@@ -232,6 +247,7 @@ let clients=[];
 let editId=null;
 let unsubscribe=null;
 let reinvioInCorso=false;
+
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({
 '&':'&amp;',
 '<':'&lt;',
@@ -244,7 +260,6 @@ function todayISO(){
 const d=new Date();
 return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-
 function localDateTime(d){
 return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
@@ -310,7 +325,7 @@ $('loginFacebook').onclick=async()=>{
     }
   }
 };
-  
+
 $('loginEmail').onclick=async()=>{
   const email=$('emailLogin').value.trim();
   const password=$('passwordLogin').value;
@@ -326,21 +341,20 @@ $('registerEmail').onclick=async()=>{
   const password=$('passwordLogin').value;
   try{
     await createUserWithEmailAndPassword(auth,email,password);
-    
-await sendEmailVerification(auth.currentUser);
-    
+    await sendEmailVerification(auth.currentUser);
     alert('Registrazione riuscita!');
   }catch(e){
     alert('Registrazione non riuscita: '+e.message);
   }
 };
-  
+
 $('resendVerification').onclick=async()=>{
   reinvioInCorso=true;
   const email=$('emailLogin').value.trim();
   const password=$('passwordLogin').value;
 
   if(!email||!password){
+    reinvioInCorso=false;
     alert('Inserisci email e password del tuo account.');
     return;
   }
@@ -358,34 +372,35 @@ $('resendVerification').onclick=async()=>{
     await signOut(auth);
   }catch(e){
     alert('Impossibile reinviare la verifica: '+e.message);
-}finally{
-  reinvioInCorso=false;
+  }finally{
+    reinvioInCorso=false;
   }
 };
-  
+
 $('logout').onclick=()=>signOut(auth);
+
 $('showPassword').onchange=()=>{
   $('passwordLogin').type=
     $('showPassword').checked ? 'text' : 'password';
 };
+
 getRedirectResult(auth).catch(e=>{
 console.warn('Redirect:',e.message);
 });
 
-
 onAuthStateChanged(auth,async u=>{
-  
+
 if(unsubscribe){
 unsubscribe();
 unsubscribe=null;
 }
 
-if (u && u.providerData.some(p => p.providerId === 'password') && !u.emailVerified) {
+if(u && u.providerData.some(p=>p.providerId==='password') && !u.emailVerified){
   alert('Devi verificare la tua email prima di accedere. Controlla la posta.');
   await signOut(auth);
   return;
-  }
-  
+}
+
 user=u;
 $('authBox').classList.toggle('hide',!!u);
 $('login').classList.toggle('hide',!!u);
@@ -501,8 +516,8 @@ b.onclick=()=>edit(b.dataset.edit);
 el.querySelectorAll('[data-delete]').forEach(b=>{
 b.onclick=()=>remove(b.dataset.delete);
 });
-}
-
+  }
+  
 function renderClients(){
 const q=$('search').value.toLowerCase().trim();
 const d=$('dayFilter').value;
@@ -753,6 +768,7 @@ document.body.appendChild(area);
 area.select();
 
 let copied=false;
+  
 try{
 copied=document.execCommand('copy');
 }catch(e){}
@@ -978,6 +994,88 @@ URL.revokeObjectURL(url);
 },1000);
 };
 
+// ELIMINAZIONE ACCOUNT E DATI
+$('deleteAccount').onclick=async()=>{
+if(!user)return;
+
+if(!confirm(
+'Vuoi eliminare definitivamente il tuo account e tutti i clienti? Questa operazione non può essere annullata.'
+))return;
+
+const account=user;
+
+try{
+// Richiede un accesso recente prima di eliminare i dati.
+const providers=account.providerData.map(p=>p.providerId);
+
+if(providers.includes('password')){
+const password=prompt(
+'Per confermare, inserisci nuovamente la password del tuo account:'
+);
+
+if(!password)return;
+
+const credential=EmailAuthProvider.credential(
+account.email,password
+);
+
+await reauthenticateWithCredential(account,credential);
+
+}else if(providers.includes('google.com')){
+await reauthenticateWithPopup(
+account,new GoogleAuthProvider()
+);
+
+}else if(providers.includes('facebook.com')){
+await reauthenticateWithPopup(
+account,new FacebookAuthProvider()
+);
+
+}else{
+alert('Non è possibile verificare nuovamente questo metodo di accesso.');
+return;
+}
+
+}catch(e){
+alert('Verifica dell’accesso non riuscita: '+e.message);
+return;
+}
+
+try{
+// Elimina i clienti.
+const snap=await getDocs(
+collection(db,'users',account.uid,'clients')
+);
+
+for(const cliente of snap.docs){
+await deleteDoc(cliente.ref);
+}
+
+// Elimina i dispositivi registrati.
+const dispositivi=await getDocs(
+collection(db,'users',account.uid,'devices')
+);
+
+for(const dispositivo of dispositivi.docs){
+await deleteDoc(dispositivo.ref);
+}
+
+// Elimina il profilo Firestore.
+await deleteDoc(doc(db,'users',account.uid));
+
+// Elimina l'account Firebase Authentication.
+await deleteUser(account);
+
+alert('Account eliminato.');
+
+}catch(e){
+alert(
+'Eliminazione non completata. Alcuni dati potrebbero essere già stati cancellati: '+e.message
+);
+}
+};
+
 </script>
 </body>
 </html>
+  
