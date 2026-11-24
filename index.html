@@ -245,6 +245,7 @@ sms:'SMS'
 
 let user=null;
 let clients=[];
+  let isPremium=false;
 let editId=null;
 let unsubscribe=null;
 let reinvioInCorso=false;
@@ -403,6 +404,7 @@ if(u && u.providerData.some(p=>p.providerId==='password') && !u.emailVerified){
 }
 
 user=u;
+  isPremium=false;
 $('authBox').classList.toggle('hide',!!u);
 $('login').classList.toggle('hide',!!u);
 $('logout').classList.toggle('hide',!u);
@@ -632,7 +634,7 @@ if(!ds.length){
 return alert('Seleziona almeno un giorno di consegna.');
 }
 // LIMITE PIANO GRATUITO
-if(!editId && clients.length>=20){
+if(!isPremium && !editId && clients.length>=20){
   alert('Hai raggiunto il limite di 20 clienti gratuiti. Per aggiungerne altri sarà necessario il piano Premium.');
   return;
   }
@@ -947,7 +949,7 @@ if(!confirm(
 let done=0;
 
 for(const c of local){
-  if(clients.length+done>=20){
+  if(!isPremium && clients.length+done>=20){
   alert('Limite di 20 clienti gratuiti raggiunto.');
   break;
   }
@@ -1046,7 +1048,7 @@ for(const cliente of backup){
     (cliente.name && c.name?.trim().toLowerCase()===cliente.name.trim().toLowerCase())
   );
   if(giaPresente)continue;
-  if(clients.length+imported>=20){
+  if(!isPremium && clients.length+imported>=20){
   alert('Limite di 20 clienti gratuiti raggiunto. Importazione interrotta.');
   break;
   }
