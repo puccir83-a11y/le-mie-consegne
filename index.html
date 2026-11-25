@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="it">
 <head>
@@ -39,14 +40,12 @@ Clienti, promemoria, WhatsApp e SMS
 <section id="authBox">
 <div id="authStatus">Caricamento…</div>
 <button id="login">Accedi con Google</button>
-
 <button id="loginFacebook" type="button">Accedi con Facebook</button>
-
 <input id="emailLogin" type="email" placeholder="Indirizzo email">
 <input id="passwordLogin" type="password" placeholder="Password">
 <label class="line">
-  <input type="checkbox" id="showPassword">
-  Mostra password
+<input type="checkbox" id="showPassword">
+Mostra password
 </label>
 <button id="loginEmail" type="button">Accedi con email</button>
 <button id="registerEmail" type="button">Registrati</button>
@@ -90,7 +89,6 @@ Clienti, promemoria, WhatsApp e SMS
 <section id="formPage" class="hide">
 <h2 id="formTitle">Nuovo cliente</h2>
 <form id="customerForm">
-
 <input id="name" placeholder="Nome o ragione sociale" required>
 <input id="shop" placeholder="Insegna">
 <input id="phone" placeholder="Telefono (es. +393331234567)" type="tel">
@@ -129,7 +127,6 @@ Clienti, promemoria, WhatsApp e SMS
 <label class="line">
 <input type="checkbox" id="season">Cliente stagionale
 </label>
-
 <label for="reopen">Data riapertura</label>
 <input id="reopen" type="date">
 
@@ -140,10 +137,8 @@ Clienti, promemoria, WhatsApp e SMS
 <label for="callbackAt">Data e ora del richiamo</label>
 <input id="callbackAt" type="datetime-local">
 <button type="button" class="alt" id="weekLater">Imposta tra 7 giorni</button>
-
 <label for="callbackReason">Motivo del richiamo</label>
 <textarea id="callbackReason" rows="2" placeholder="Es. Richiamare per conferma ordine"></textarea>
-
 <p class="muted">Il promemoria comparirà nella Home e nella sezione Promemoria. Per una notifica a telefono chiuso serve attivare la funzione programmata Firebase.</p>
 
 <label for="customMessage">Messaggio personalizzato</label>
@@ -169,6 +164,16 @@ Clienti, promemoria, WhatsApp e SMS
 
 <section id="settings" class="hide">
 <h2>Impostazioni</h2>
+<div id="subscriptionPanel" class="card" style="padding:16px;margin:16px 0;border:1px solid #ddd;border-radius:12px">
+<h3>Il mio abbonamento</h3>
+<p id="currentPlan">Piano attuale: Gratis</p>
+<p id="planUsage">Clienti: caricamento...</p>
+<hr>
+<h3>Passa a Premium</h3>
+<p><strong>2,99 € / mese</strong></p>
+<p>Clienti illimitati e nessuna pubblicità.</p>
+<p class="muted">Abbonamento non ancora acquistabile. I pagamenti saranno disponibili dopo la configurazione di Google Play.</p>
+</div>
 <button id="notifications">Attiva notifiche push su questo telefono</button>
 <p id="pushStatus" class="muted"></p>
 <button id="migrate" class="alt">Importa i clienti salvati su questo telefono</button>
@@ -183,39 +188,39 @@ Clienti, promemoria, WhatsApp e SMS
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js';
 
 import {
-  getAuth,
-  GoogleAuthProvider,
-  FacebookAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
-  onAuthStateChanged,
-  signOut,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  deleteUser,
-  reauthenticateWithPopup,
-  EmailAuthProvider,
-  reauthenticateWithCredential
+getAuth,
+GoogleAuthProvider,
+FacebookAuthProvider,
+signInWithPopup,
+signInWithRedirect,
+getRedirectResult,
+onAuthStateChanged,
+signOut,
+createUserWithEmailAndPassword,
+signInWithEmailAndPassword,
+sendEmailVerification,
+sendPasswordResetEmail,
+deleteUser,
+reauthenticateWithPopup,
+EmailAuthProvider,
+reauthenticateWithCredential
 } from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js';
 
 import {
-  getFirestore,
-  collection,
-  doc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
-    getDocs,
-  getDoc
+getFirestore,
+collection,
+doc,
+setDoc,
+deleteDoc,
+onSnapshot,
+getDocs,
+getDoc
 } from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
 
 import {
-  getMessaging,
-  getToken,
-  isSupported
+getMessaging,
+getToken,
+isSupported
 } from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging.js';
 
 const firebaseConfig={
@@ -246,7 +251,7 @@ sms:'SMS'
 
 let user=null;
 let clients=[];
-  let isPremium=false;
+let isPremium=false;
 let editId=null;
 let unsubscribe=null;
 let reinvioInCorso=false;
@@ -263,6 +268,7 @@ function todayISO(){
 const d=new Date();
 return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
 function localDateTime(d){
 return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
@@ -317,74 +323,74 @@ alert('Accesso non riuscito: '+e.message);
 };
 
 $('loginFacebook').onclick=async()=>{
-  const facebookProvider=new FacebookAuthProvider();
-  try{
-    await signInWithPopup(auth,facebookProvider);
-  }catch(e){
-    if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(e.code)){
-      await signInWithRedirect(auth,facebookProvider);
-    }else{
-      alert('Accesso Facebook non riuscito: '+e.message);
-    }
-  }
+const facebookProvider=new FacebookAuthProvider();
+try{
+await signInWithPopup(auth,facebookProvider);
+}catch(e){
+if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(e.code)){
+await signInWithRedirect(auth,facebookProvider);
+}else{
+alert('Accesso Facebook non riuscito: '+e.message);
+}
+}
 };
 
 $('loginEmail').onclick=async()=>{
-  const email=$('emailLogin').value.trim();
-  const password=$('passwordLogin').value;
-  try{
-    await signInWithEmailAndPassword(auth,email,password);
-  }catch(e){
-    alert('Accesso non riuscito: '+e.message);
-  }
+const email=$('emailLogin').value.trim();
+const password=$('passwordLogin').value;
+try{
+await signInWithEmailAndPassword(auth,email,password);
+}catch(e){
+alert('Accesso non riuscito: '+e.message);
+}
 };
 
 $('registerEmail').onclick=async()=>{
-  const email=$('emailLogin').value.trim();
-  const password=$('passwordLogin').value;
-  try{
-    await createUserWithEmailAndPassword(auth,email,password);
-    await sendEmailVerification(auth.currentUser);
-    alert('Registrazione riuscita!');
-  }catch(e){
-    alert('Registrazione non riuscita: '+e.message);
-  }
+const email=$('emailLogin').value.trim();
+const password=$('passwordLogin').value;
+try{
+await createUserWithEmailAndPassword(auth,email,password);
+await sendEmailVerification(auth.currentUser);
+alert('Registrazione riuscita!');
+}catch(e){
+alert('Registrazione non riuscita: '+e.message);
+}
 };
 
 $('resendVerification').onclick=async()=>{
-  reinvioInCorso=true;
-  const email=$('emailLogin').value.trim();
-  const password=$('passwordLogin').value;
+reinvioInCorso=true;
+const email=$('emailLogin').value.trim();
+const password=$('passwordLogin').value;
 
-  if(!email||!password){
-    reinvioInCorso=false;
-    alert('Inserisci email e password del tuo account.');
-    return;
-  }
+if(!email||!password){
+reinvioInCorso=false;
+alert('Inserisci email e password del tuo account.');
+return;
+}
 
-  try{
-    const result=await signInWithEmailAndPassword(auth,email,password);
+try{
+const result=await signInWithEmailAndPassword(auth,email,password);
 
-    if(result.user.emailVerified){
-      alert('La tua email è già verificata.');
-    }else{
-      await sendEmailVerification(result.user);
-      alert('Email di verifica inviata. Controlla anche la posta indesiderata.');
-    }
+if(result.user.emailVerified){
+alert('La tua email è già verificata.');
+}else{
+await sendEmailVerification(result.user);
+alert('Email di verifica inviata. Controlla anche la posta indesiderata.');
+}
 
-    await signOut(auth);
-  }catch(e){
-    alert('Impossibile reinviare la verifica: '+e.message);
-  }finally{
-    reinvioInCorso=false;
-  }
+await signOut(auth);
+}catch(e){
+alert('Impossibile reinviare la verifica: '+e.message);
+}finally{
+reinvioInCorso=false;
+}
 };
 
 $('logout').onclick=()=>signOut(auth);
 
 $('showPassword').onchange=()=>{
-  $('passwordLogin').type=
-    $('showPassword').checked ? 'text' : 'password';
+$('passwordLogin').type=
+$('showPassword').checked?'text':'password';
 };
 
 getRedirectResult(auth).catch(e=>{
@@ -392,7 +398,6 @@ console.warn('Redirect:',e.message);
 });
 
 onAuthStateChanged(auth,async u=>{
-
 if(unsubscribe){
 unsubscribe();
 unsubscribe=null;
@@ -405,7 +410,8 @@ if(u && u.providerData.some(p=>p.providerId==='password') && !u.emailVerified){
 }
 
 user=u;
-  isPremium=false;
+isPremium=false;
+
 $('authBox').classList.toggle('hide',!!u);
 $('login').classList.toggle('hide',!!u);
 $('logout').classList.toggle('hide',!u);
@@ -421,19 +427,21 @@ clients=[];
 .forEach(id=>$(id).classList.add('hide'));
 return;
 }
-// LETTURA PIANO ABBONAMENTO
-try {
-  const piano = await getDoc(
-    doc(db,'users',u.uid,'subscription','current')
-  );
 
-  isPremium = piano.exists() &&
-    piano.data().status === 'premium';
+// LETTURA PIANO ABBONAMENTO FIREBASE
+try{
+const piano=await getDoc(
+doc(db,'users',u.uid,'subscription','current')
+);
 
-} catch(e) {
-  isPremium = false;
-  console.warn('Lettura abbonamento:',e.message);
+isPremium=piano.exists() &&
+piano.data().status==='premium';
+
+}catch(e){
+isPremium=false;
+console.warn('Lettura abbonamento:',e.message);
 }
+
 setDoc(
 doc(db,'users',u.uid),
 {email:u.email||'',updatedAt:Date.now()},
@@ -451,6 +459,20 @@ page('home');
 });
 
 function render(){
+const currentPlan=document.getElementById('currentPlan');
+const planUsage=document.getElementById('planUsage');
+
+if(currentPlan){
+currentPlan.textContent='Piano attuale: '+
+(isPremium?'Premium':'Gratis');
+}
+
+if(planUsage){
+planUsage.textContent=isPremium
+?'Clienti: '+clients.length+' (illimitati)'
+:'Clienti: '+clients.length+' / 20';
+}
+
 renderHome();
 renderClients();
 renderPlaces();
@@ -532,8 +554,8 @@ b.onclick=()=>edit(b.dataset.edit);
 el.querySelectorAll('[data-delete]').forEach(b=>{
 b.onclick=()=>remove(b.dataset.delete);
 });
-  }
-  
+}
+
 function renderClients(){
 const q=$('search').value.toLowerCase().trim();
 const d=$('dayFilter').value;
@@ -646,11 +668,13 @@ const ds=[...document.querySelectorAll('[name=day]:checked')]
 if(!ds.length){
 return alert('Seleziona almeno un giorno di consegna.');
 }
+
 // LIMITE PIANO GRATUITO
 if(!isPremium && !editId && clients.length>=20){
-  alert('Hai raggiunto il limite di 20 clienti gratuiti. Per aggiungerne altri sarà necessario il piano Premium.');
-  return;
-  }
+alert('Hai raggiunto il limite di 20 clienti gratuiti. Per aggiungerne altri sarà necessario il piano Premium.');
+return;
+}
+
 const id=editId||crypto.randomUUID();
 const previous=editId
 ?clients.find(x=>x.id===editId)
@@ -784,17 +808,12 @@ const area=document.createElement('textarea');
 area.value=message;
 area.style.position='fixed';
 area.style.opacity='0';
+  
 document.body.appendChild(area);
 area.select();
-
-let copied=false;
-  
-try{
-copied=document.execCommand('copy');
-}catch(e){}
-
+const ok=document.execCommand('copy');
 area.remove();
-return copied;
+return ok;
 }
 }
 
@@ -962,10 +981,11 @@ if(!confirm(
 let done=0;
 
 for(const c of local){
-  if(!isPremium && clients.length+done>=20){
-  alert('Limite di 20 clienti gratuiti raggiunto.');
-  break;
-  }
+if(!isPremium && clients.length+done>=20){
+alert('Limite di 20 clienti gratuiti raggiunto.');
+break;
+}
+
 try{
 const id=String(
 c.id||crypto.randomUUID()
@@ -1017,11 +1037,12 @@ setTimeout(()=>{
 URL.revokeObjectURL(url);
 },1000);
 };
+
 // RIPRISTINO CLIENTI DA BACKUP JSON
 $('restoreBackup').onclick=async()=>{
 if(!user){
-  alert('Devi effettuare l’accesso.');
-  return;
+alert('Devi effettuare l’accesso.');
+return;
 }
 
 const input=document.createElement('input');
@@ -1029,56 +1050,64 @@ input.type='file';
 input.accept='.json,application/json';
 
 input.onchange=async()=>{
-  const file=input.files[0];
-  if(!file)return;
+const file=input.files[0];
+if(!file)return;
 
-  let backup;
-  try{
-    backup=JSON.parse(await file.text());
-  }catch(e){
-    alert('Il file JSON non è valido.');
-    return;
-  }
+let backup;
+try{
+backup=JSON.parse(await file.text());
+}catch(e){
+alert('Il file JSON non è valido.');
+return;
+}
 
-  if(!Array.isArray(backup) ||
-     !backup.every(c=>c && typeof c==='object' &&
-       !Array.isArray(c) &&
-       typeof c.name==='string' && c.name.trim())){
-    alert('Il file non contiene un elenco valido di clienti.');
-    return;
-  }
+if(!Array.isArray(backup) ||
+!backup.every(c=>c && typeof c==='object' &&
+!Array.isArray(c) &&
+typeof c.name==='string' && c.name.trim())){
+alert('Il file non contiene un elenco valido di clienti.');
+return;
+}
 
-  if(!confirm(
-    'Vuoi importare '+backup.length+
-    ' clienti? I clienti già presenti non verranno cancellati.'
-  ))return;
+if(!confirm(
+'Vuoi importare '+backup.length+
+' clienti? I clienti già presenti non verranno cancellati.'
+))return;
 
-  let imported=0;
-  try{
+let imported=0;
+
+try{
 for(const cliente of backup){
-  const giaPresente=clients.some(c=>
-    (cliente.id && c.id===cliente.id) ||
-    (cliente.name && c.name?.trim().toLowerCase()===cliente.name.trim().toLowerCase())
-  );
-  if(giaPresente)continue;
-  if(!isPremium && clients.length+imported>=20){
-  alert('Limite di 20 clienti gratuiti raggiunto. Importazione interrotta.');
-  break;
-  }
-      const {id,...data}=cliente;
-      const newId=crypto.randomUUID();
-      await setDoc(doc(coll(),newId),data);
-      imported++;
-    }
-    alert('Clienti ripristinati: '+imported);
-  }catch(e){
-    alert('Ripristinati '+imported+
-      ' clienti prima dell’errore: '+e.message);
-  }
+const giaPresente=clients.some(c=>
+(cliente.id && c.id===cliente.id) ||
+(cliente.name && c.name?.trim().toLowerCase()===cliente.name.trim().toLowerCase())
+);
+
+if(giaPresente)continue;
+
+if(!isPremium && clients.length+imported>=20){
+alert('Limite di 20 clienti gratuiti raggiunto. Importazione interrotta.');
+break;
+}
+
+const {id,...data}=cliente;
+const newId=crypto.randomUUID();
+
+await setDoc(doc(coll(),newId),data);
+imported++;
+}
+
+alert('Clienti ripristinati: '+imported);
+
+}catch(e){
+alert('Ripristinati '+imported+
+' clienti prima dell’errore: '+e.message);
+}
 };
 
 input.click();
 };
+
 // ELIMINAZIONE ACCOUNT E DATI
 $('deleteAccount').onclick=async()=>{
 if(!user)return;
@@ -1090,7 +1119,6 @@ if(!confirm(
 const account=user;
 
 try{
-// Richiede un accesso recente prima di eliminare i dati.
 const providers=account.providerData.map(p=>p.providerId);
 
 if(providers.includes('password')){
@@ -1163,4 +1191,3 @@ alert(
 </script>
 </body>
 </html>
-  
