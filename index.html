@@ -208,7 +208,8 @@ import {
   setDoc,
   deleteDoc,
   onSnapshot,
-  getDocs
+    getDocs,
+  getDoc
 } from 'https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js';
 
 import {
@@ -420,7 +421,19 @@ clients=[];
 .forEach(id=>$(id).classList.add('hide'));
 return;
 }
+// LETTURA PIANO ABBONAMENTO
+try {
+  const piano = await getDoc(
+    doc(db,'users',u.uid,'subscription','current')
+  );
 
+  isPremium = piano.exists() &&
+    piano.data().status === 'premium';
+
+} catch(e) {
+  isPremium = false;
+  console.warn('Lettura abbonamento:',e.message);
+}
 setDoc(
 doc(db,'users',u.uid),
 {email:u.email||'',updatedAt:Date.now()},
